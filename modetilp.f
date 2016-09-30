@@ -1,5 +1,4 @@
       subroutine modetilp(pi,imax,d,r,dndlrkny,dndlrk,
-csoa     $ cat,fac,fabc,faq,kcomp,iSOA)
      $ cat,fac,fabc,faq,kcomp)
 
 c **********************************************************************************
@@ -40,8 +39,8 @@ c      to stop working for some cases. Presently the code crashes for kcomp=8
 c      when trying to find the fine solution. The coarse solution method works,
 c      and has been used in this last version, but only for kcomp=8.
 cc
-csoa   Note tha dry lognormal the fitted size parameters do not depend
-csoa   on the mass fraction fombc for kcomp=1, nor fbcbg for kcomp=4.
+c     Note that the dry lognormal fitted size parameters do not depend
+c     on the mass fraction fombc for kcomp=1, nor fbcbg for kcomp=4.
 
       implicit none
 
@@ -56,9 +55,6 @@ csoa   on the mass fraction fombc for kcomp=1, nor fbcbg for kcomp=4.
       REAL     dres, invdres, sres, invsres 
       REAL     const, deltan, deltav, deltavnew
       INTEGER  j1nm, j19um, j20um, istep, isteps, jsteps
-cSOA
-csoa      INTEGER iSOA
-cSOA
       REAL     dndlrk(0:100), nsumorig
 
 c     Due to coarse resolution for large radii it is necessary to
@@ -99,12 +95,8 @@ c        write(887,*) j,i,a,b,nlin(j)
 c        write(*,*) rlin(j),nlin(j) 
 c        write(889,*) rlin(j),nlin(j) 
       enddo
-ctest
-c       nlin(1)=nlin(2) ! istedet for nlin(1)=0, hadde ingen effekt på løsningen
-ctest
      
 c     Narrow down the search area for adapted modal radii (rks)
-cc     Find smallest rlin (rmin=r(jmin)) for which nlin>1.e-4?
 c     Find smallest rlin (rmin=r(jmin)) for which nlin*r**2>1.e-10?
 c      eps=1.e-4
       eps=1.e-10
@@ -116,7 +108,6 @@ c      eps=1.e-4
         nmin=nlin(j)
       enddo
 c      write(*,*) 'rmin, nlinmin =', rlin(jmin), nlin(jmin)*rlin(jmin)**2 
-cc     Find largest rlin (rmin=r(jmax)) for which nlin>1.e-4?
 c     Find largest rlin (rmin=r(jmax)) for which nlin*r**2>1.e-4?
       eps=1.e-4  ! 1.e-8 gir problemer (krasj)
       nmin=1.e-10  ! initialverdi
@@ -181,9 +172,6 @@ c     terminate if outside (on the edge of) interval
         stop
       endif
 
-cSS      if(kcomp.eq.8) goto 123    ! this fine SS mode gets into problems with the fine resolution 
-cSS      (not necessary with the new larger fine SS mode of Salter et al., 2015) 
-   
 c     Range of rk and logsk (*0.5 to *2) for finer resolution solution 
 c      irmin=max(jmin,int(500*rks))
 c      irmax=min(jmax,int(2000*rks))
@@ -366,24 +354,10 @@ c
 c      Here comes the logntilp*.out look-up tables:
 c
         if(kcomp.ge.1.and.kcomp.le.3) then
-cSOA
-csoa          if(kcomp.eq.1.and.iSOA.eq.1) then
-ckcomp          write(9003,150) cat, fac, rks, logsks, kcomp
           write(9003,150) kcomp, cat, fac, rks, logsks
-c          write(*,150) cat, fac, rks, logsks, kcomp
-cSOA
-csoa          else ! kcomp.eq.2.or.kcomp.eq.3
-ckcomp          write(9003,100) cat, rks, logsks, kcomp
-csoa          write(9003,100) kcomp, cat, rks, logsks
-c          write(*,100) cat, rks, logsks, kcomp
-csoa         endif
         elseif(kcomp.eq.4) then
-ckcomp          write(9003,200) cat, fac, faq, rks, logsks, kcomp 
           write(9003,200) kcomp, cat, fac, faq, rks, logsks
-c          write(*,200) cat, fac, faq, rks, logsks, kcomp 
         elseif(kcomp.ge.5.and.kcomp.le.10) then
-ckcomp          write(9003,300) cat, fac, fabc, faq, rks, logsks, kcomp  
-ckcomp          write(*,300) cat, fac, fabc, faq, rks, logsks, kcomp  
           write(9003,300) kcomp, cat, fac, fabc, faq, rks, logsks
           write(*,300) kcomp, cat, fac, fabc, faq, rks, logsks
         else
@@ -391,10 +365,6 @@ ckcomp          write(*,300) cat, fac, fabc, faq, rks, logsks, kcomp
           stop
         endif
 
-ckcomp 100  format(3(x,e12.5),x,I3)
-ckcomp 150  format(4(x,e12.5),x,I3)
-ckcomp 200  format(5(x,e12.5),x,I3)
-ckcomp 300  format(6(x,e12.5),x,I3)
  100  format(I3,3(x,e12.5))
  150  format(I3,4(x,e12.5))
  200  format(I3,5(x,e12.5))

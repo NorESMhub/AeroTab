@@ -16,6 +16,7 @@ c ******************************************************************************
       enddo
 
         do it=1,ismolar
+
       do i=0,imax
          dad(i)=(abs(dad(i))-dad(i)*dad(i)/d)
      $         *(dncny(i+1)-dncny(i))
@@ -31,7 +32,8 @@ c ******************************************************************************
       do i=1,imax       
         dncny(i)=dncny(i)+dncinc(i)
       enddo
-        enddo
+
+        enddo  ! it
 
       return
       end  

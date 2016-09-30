@@ -16,14 +16,12 @@ c     Define constants and parameters for calculations of size distributions.
       REAL d, r0, rbcn, logs0 
       REAL diff, th, mfv, rhobc, rhooc, rhos, rhosv, rhoc2, rhorbc 
       REAL diffsoa, thsoa, mfvsoa
-c      REAL rhobcax, rhow, Ms, Mso4, Msv, bcint, vbcint, xlastval
       REAL rhobcax, rhow, bcint, vbcint, xlastval
       REAL r(0:100), rp(0:100), fracdim(0:100) 
-csoa
       REAL pi, e
       REAL aunit, boltz, Mair, Msv, Msoa, Mdual, rair, rmol, t0, p0,
      $ Vad, Vadair, Vadsoa 
-csoa      
+
       PARAMETER  (pi=3.141592654, e=2.718281828)
 
 
@@ -108,22 +106,20 @@ c     assuming p = 1 atm and T=273 K (see notes, folder XXVI).
 c      diff=9.5e6         ! diffusion coeffisient (um^2/s)
 c      th=2.43e8          ! thermal velocity      (um/s)                  
 c      mfv=1.65e-2        ! mean free path        (um) 
-cSOA  adding SOA-values for the same variables, based on the same as above,
+c     adding SOA-values for the same variables, based on the same as above,
 c     assuming molar mass of SOA to be 144 (or 150) (jfr. notater s. 336 i perm XXVI).
 c      (rhosoa=rhooc)    for M=144                         (for M=150)
 c      diffsoa=6.1e6     ! diffusion coeffisient (um^2/s)    (5.9e6)
 c      thsoa=2.0e8       ! thermal velocity      (um/s)      (2.0e8)              
 c      mfvsoa=1.2e-2     ! mean free path        (um)        (1.1e-2)
-cSOA
 
-csoa  From july 2015: diff(soa), th(soa) and mfv(soa) is instead calculated in the code:
-csoa  physical constants and properties for ambient dry air at standard temperature and pressure 
+c     From july 2015: diff(soa), th(soa) and mfv(soa) is instead calculated in the code:
+c     physical constants and properties for ambient dry air at standard temperature and pressure 
 c     (mainly taken from Seinfeld & Pandis (1998), Appendix A):
       boltz=1.381e-23   ! Boltzmann constant (J/K)
       aunit=1.6606e-27  ! Atomic mass unit (kg)
       t0=273.15         ! Standard temperature (K)
       p0=101325.0       ! Standard pressure (Pa)
-cold  rair=3.1e-10      ! old assumprion for typical air molecule (collision) radius (m)
       rair=1.73e-10     ! Typical air molecule (collision) radius (m)
       Mair=28.97        ! Molecular weight for dry air (atomic units)
       Msv=98.08         ! Molecular weight of sulfuric acid (H2SO4)
@@ -142,7 +138,6 @@ c     semi-empirically based formula from Fuller et al (1965, 1966, 1969), see "
 c     Liquids" by Poling et al., 5'th edition (DOI:10.1036/0070116822), Eq. 11-4.4:  
       Vadair=19.7   ! atomic diffusion volume for air (Table 11-1)
       Vad=51.96     ! atomic diffusion volume for H2SO4 (estimated from atomic values in Table 11-1) 
-cold      Vadsoa=136.0 ! atomic diffusion volume for old SOA (estimated from atomic values in Table 11-1)
       Vadsoa=208.18 ! atomic diffusion volume for SOA as C10H16O2 (estimated from atomic values in Table 11-1)  ! Does not follow from Msoa!!!
       Mdual=2.0/(1.0/Mair+1.0/Msv)
       diff=1.e8*0.00143*t0**1.75
@@ -152,12 +147,12 @@ cold      Vadsoa=136.0 ! atomic diffusion volume for old SOA (estimated from ato
       diffsoa=1.e8*0.00143*t0**1.75
      $ /((p0/1.0e5)*sqrt(Mdual)
      $ *(((Vadsoa)**(1.0/3.0)+(Vadair)**(1.0/3.0))**2))  ! diffusion coeffisient for SOA in air (um^2/s)
-      write(*,*) ' th = ', th
-      write(*,*) ' thsoa = ', thsoa
-      write(*,*) ' mfv = ', mfv
-      write(*,*) ' mfvsoa = ', mfvsoa
-      write(*,*) ' diff = ', diff
-      write(*,*) ' diffsoa = ', diffsoa
+c      write(*,*) ' th = ', th
+c      write(*,*) ' thsoa = ', thsoa
+c      write(*,*) ' mfv = ', mfv
+c      write(*,*) ' mfvsoa = ', mfvsoa
+c      write(*,*) ' diff = ', diff
+c      write(*,*) ' diffsoa = ', diffsoa
 
       return
       end 

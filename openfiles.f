@@ -1,4 +1,4 @@
-      subroutine openfiles(kcomp,iopt,itilp,ib)
+      subroutine openfiles(kcomp,iopt,ib)
 
 c **********************************************************************************
 c     Opening files for use as input to NorESM (only for kcomp=0-10). nkcomp*.out 
@@ -7,7 +7,7 @@ c
 c     Created by Alf Kirkevåg.
 c **********************************************************************************
 
-      integer kcomp, iopt, itilp, ib
+      integer kcomp, iopt, ib
 
       if(iopt.eq.1) then
 
@@ -193,42 +193,6 @@ c ******************************************************************************
 
       else  ! iopt=0
 
-          if(itilp.eq.0) then
-
-        if(kcomp.eq.1) then
-          call system('mv ccnk1.out ccnk1_old.out')
-          open(9002, file='ccnk1.out')
-        elseif(kcomp.eq.2) then
-          call system('mv ccnk2.out ccnk2_old.out')
-          open(9002, file='ccnk2.out')
-        elseif(kcomp.eq.3) then
-          call system('mv ccnk3.out ccnk3_old.out')
-          open(9002, file='ccnk3.out')
-        elseif(kcomp.eq.4) then
-          call system('mv ccnk4.out ccnk4_old.out')
-          open(9002, file='ccnk4.out')
-        elseif(kcomp.eq.5) then
-          call system('mv ccnk5.out ccnk5_old.out')
-          open(9002, file='ccnk5.out')
-        elseif(kcomp.eq.6) then
-          call system('mv ccnk6.out ccnk6_old.out')
-          open(9002, file='ccnk6.out')
-        elseif(kcomp.eq.7) then
-          call system('mv ccnk7.out ccnk7_old.out')
-          open(9002, file='ccnk7.out')
-        elseif(kcomp.eq.8) then
-          call system('mv ccnk8.out ccnk8_old.out')
-          open(9002, file='ccnk8.out')
-        elseif(kcomp.eq.9) then
-          call system('mv ccnk9.out ccnk9_old.out')
-          open(9002, file='ccnk9.out')
-        elseif(kcomp.eq.10) then
-          call system('mv ccnk10.out ccnk10_old.out')
-          open(9002, file='ccnk10.out')
-        endif        
-
-          elseif(itilp.eq.1) then
-
         if(kcomp.eq.1) then
           call system('mv nkcomp1.out nkcomp1_old.out')
           open(9001, file='nkcomp1.out')
@@ -292,8 +256,6 @@ c ******************************************************************************
           call system('mv logntilp10.out logntilp10_old.out')
           open(9003, file='logntilp10.out')
         endif        
-
-          endif  ! itilp
 
       endif  ! iopt
 

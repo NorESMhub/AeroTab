@@ -1,9 +1,6 @@
-csoa      subroutine sizemie (imin, imax, iSOA, r, rbcn, d, vsi, vbci, 
-      subroutine sizemie (imin, imax, r, rbcn, d, vsi, vbci, 
-csoa     $ voci, vai, dndlrk, dndlrkny, kcomp, itot, ib, vssol, 
-     $ voci, vai, vombg, fombg, vbcbg, fbcbg,
-     $ dndlrk, dndlrkny, kcomp, itot, ib, vssol, 
-     $ vbcsol, vocsol, vasol, vw, fki, rh, Ctot, Nnat, catot, 
+      subroutine sizemie (imin, imax, r, rbcn, d, vsi, vbci, voci, vai, 
+     $ vombg, fombg, vbcbg, fbcbg, dndlrk, dndlrkny, kcomp, itot, ib, 
+     $ vssol, vbcsol, vocsol, vasol, vw, fki, rh, Ctot, Nnat, catot, 
      $ fac, fabc, faq, fracdim, xlam, xlami, xlamb, xlame, 
      $ fband, fb, cref, omega, gass, bext, kext) 
 
@@ -44,13 +41,7 @@ c     over the size distribution), and writes the result to file.
      $         TFORW(2), TBACK(2), crin, cref(5,31)
       LOGICAL  iband11, iband16, iband440, iband500, iband670, iband870
       LOGICAL  iband550
-csoa
       REAL fombg, vombg, vbcbg, fbcbg
-csoa
-cSOA
-csoa      INTEGER  iSOA
-cSOA
-ctest      REAL rhut
 
 	perfct =.false.
 	mimcut=1.0e-6
@@ -68,7 +59,7 @@ c          xmu(j)=real(j-1)/10.0-1.0
 c        enddo
 ctest        
 
-c       initialiserer optiske parametre
+c       initializing optical parameters
         do iband = 1, 31
           omega(iband)= 0.0
           gass(iband) = 0.0
@@ -129,6 +120,7 @@ c       logical variables for specific AeroCom calculations (if .true.)
 
 c       the gross optical parameters for an aerosol mode is found by
 c       integrating over all particle radii (for each wavelength)  
+c        write(*,*) 'imin, imax =', imin, imax
 ctest        do 1000 i=20,20
         do 1000 i=imin,imax   ! intergration over size
 
@@ -138,7 +130,6 @@ c         wavelength dependent complex rafractive indices (crin) are
 c         found from linear interpolation of tabulated values for each
 c         aerosol component in subroutine refind
           call refind (xlam(iband), i, ib, iband, cref, crin, kcomp, 
-csoa     $      vbcsol, vocsol, vssol, vasol, vw, fki, r, rbcn, fracdim)
      $      vbcsol, vocsol, vssol, vasol, vw, vombg, vbcbg, fki, r, 
      $      rbcn, fracdim)
 
@@ -302,8 +293,6 @@ c          write(*,*) 'bext(12) =', bext(12)
 c          write(*,*) 'bext12sum=', bebglt1+bebggt1
 c          write(*,*) 'backsc=', backsc
 c          write(*,*) 'S* =', bext(12)/backsc
-cSOA
-csoa         if(kcomp.eq.1.and.iSOA.eq.1) then
         elseif(kcomp.eq.1) then
          write(9500,8600) kcomp, rh, fombg, catot, fac, 
      $     bext(9),  bext(11), bext(15), bext(18), 
@@ -331,8 +320,6 @@ c          write(*,*) 'bext12sum=', bebglt1+bebggt1+bebclt1+bebcgt1
 c     $                            +beoclt1+beocgt1+besult1+besugt1      
 c          write(*,*) 'backsc=', backsc
 c          write(*,*) 'S* =', bext(12)/backsc
-cSOA
-csoa         else ! (kcomp.eq.2.or.kcomp.eq.3
 c         write(9500,8100) kcomp, rh, catot, 
 c     $     bext(9),  bext(11), bext(15), bext(18), 
 c     $     bebg(9),  bebg(11), bebg(15), bebg(18), 
@@ -350,7 +337,6 @@ cc          write(*,*) 'backsc=', backsc
 cc          write(*,*) 'S* =', bext(12)/backsc
 c         endif
         elseif(kcomp.eq.4) then
-csoa         write(9500,8600) kcomp, rh, catot, fac, faq, 
          write(9500,6100) kcomp, rh, fbcbg, catot, fac, faq, 
      $     bext(9),  bext(11), bext(15), bext(18), 
      $     bebg(9),  bebg(11), bebg(15), bebg(18), 
@@ -590,29 +576,18 @@ c
            write(9000,4000) kcomp, iband, rh,  
      $     omega(iband), gass(iband), bext(iband), kext(iband)
          enddo
-cSOA
-csoa        elseif(kcomp.ge.1.and.kcomp.le.3) then
         elseif(kcomp.eq.1) then
          do iband = 1, 14
            write(9000,9500) kcomp, iband, rh, fombg, catot, fac, 
      $     omega(iband), gass(iband), bext(iband), kext(iband)
          enddo
-csoa         if(kcomp.eq.1.and.iSOA.eq.1) then
         elseif(kcomp.eq.2.or.kcomp.eq.3) then
          do iband = 1, 14
            write(9000,9100) kcomp, iband, rh, catot, fac, 
      $     omega(iband), gass(iband), bext(iband), kext(iband)
          enddo
-cSOA
-csoa         else ! kcomp.eq.2.or.kcomp.eq.3
-c         do iband = 1, 14
-c           write(9000,9000) kcomp, iband, rh, catot,  
-c     $     omega(iband), gass(iband), bext(iband), kext(iband)
-c         enddo
-c         endif
         elseif(kcomp.eq.4) then
          do iband = 1, 14
-csoa           write(9000,9500) kcomp, iband, rh, catot, fac, faq,  
            write(9000,5000) kcomp, iband, rh, fbcbg, catot, fac, faq,  
      $     omega(iband), gass(iband), bext(iband), kext(iband)
          enddo
@@ -631,28 +606,18 @@ c     trenger bare (1-omega)*kext her til slutt (masse faas fra SW-tabellene)
            write(9009,4010) kcomp, iband, rh,  
      $     (1.0-omega(iband))*kext(iband)
          enddo
-cSOA
         elseif(kcomp.eq.1) then
          do iband = 1, 16
            write(9009,9510) kcomp, iband, rh, fombg, catot, fac, 
      $     (1.0-omega(iband))*kext(iband)
          enddo
         elseif(kcomp.eq.2.or.kcomp.eq.3) then
-csoa         if(kcomp.eq.1.and.iSOA.eq.1) then
          do iband = 1, 16
            write(9009,9110) kcomp, iband, rh, catot, fac, 
      $     (1.0-omega(iband))*kext(iband)
          enddo
-cSOA
-csoa         else ! kcomp.eq.2.or.kcomp.eq.3) then
-c         do iband = 1, 16
-c           write(9009,9010) kcomp, iband, rh, catot,  
-c     $     (1.0-omega(iband))*kext(iband)
-c         enddo
-csoa         endif
         elseif(kcomp.eq.4) then
          do iband = 1, 16
-csoa           write(9009,9510) kcomp, iband, rh, catot, fac, faq,  
            write(9009,5010) kcomp, iband, rh, fbcbg, catot, fac, faq,  
      $     (1.0-omega(iband))*kext(iband)
          enddo
@@ -672,29 +637,18 @@ c
      $     omega(iband), gass(iband), bext(iband), kext(iband)
          enddo
        elseif(itot.eq.1.and.ib.ge.12) then
-cSOA
         if(kcomp.eq.1) then
          do iband = 1, 12
-csoa           write(9000,9100) kcomp, iband, rh, catot, fac, 
            write(9000,9500) kcomp, iband, rh, fombg, catot, fac,  
      $     omega(iband), gass(iband), bext(iband), kext(iband)
          enddo
         elseif(kcomp.eq.2.or.kcomp.eq.3) then
-csoa         if(kcomp.eq.1.and.iSOA.eq.1) then
          do iband = 1, 12
            write(9000,9100) kcomp, iband, rh, catot, fac,  
      $     omega(iband), gass(iband), bext(iband), kext(iband)
          enddo
-cSOA
-csoa        else ! kcomp.eq.2.or.kcomp.eq.3
-c         do iband = 1, 12
-c           write(9000,9000) kcomp, iband, rh, catot,  
-c     $     omega(iband), gass(iband), bext(iband), kext(iband)
-c         enddo
-csoa         endif
         elseif(kcomp.eq.4) then
          do iband = 1, 12
-csoa           write(9000,9500) kcomp, iband, rh, catot, fac, faq,  
            write(9000,5000) kcomp, iband, rh, fbcbg, catot, fac, faq,  
      $     omega(iband), gass(iband), bext(iband), kext(iband)
          enddo
@@ -724,7 +678,6 @@ csoa           write(9000,9500) kcomp, iband, rh, catot, fac, faq,
  8500 format(I2,f6.3,3e10.3,28e10.3)
  8600 format(I2,f6.3,3e10.3,38e10.3)
  9000 format(2I3,f8.3,x,e10.3,4(x,e12.5))
- 9010 format(2I3,f8.3,x,e10.3,x,e12.5)
  9100 format(2I3,f8.3,2(x,e10.3),4(x,e12.5))
  9110 format(2I3,f8.3,2(x,e10.3),x,e12.5)
  9500 format(2I3,f8.3,3(x,e10.3),4(x,e12.5))

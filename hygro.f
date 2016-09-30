@@ -25,7 +25,6 @@ c       * (mwh2o/molecular_weight) * (density/rhoh2o).
 c     Soot/BC (aerosoltype 2 in CAM5-Oslo), 
 c     a practically hydrophobic component.
       xbc=5.0e-7 ! This is the value previously used
-csoa      xcam=get_hygroscopicity(2)                                              ! AEROSOL_TYPE_BC etc !!!!!!!!!!!!!!!
       xcam=get_hygroscopicity(AEROSOL_TYPE_BC)
       if(abs((xbc-xcam)/xcam).gt.0.005) then
         write(*,*) 'xbc differs (more than 0.5%) from CAM5-Oslo value.' 
@@ -35,7 +34,6 @@ csoa      xcam=get_hygroscopicity(2)                                            
 
 c     Mineral (aerosoltype 4 in CAM5-Oslo)
       xdst=0.0693 ! This is the value previously used
-csoa      xcam=get_hygroscopicity(4)
       xcam=get_hygroscopicity(AEROSOL_TYPE_DUST)
       if(abs((xdst-xcam)/xcam).gt.0.005) then
         write(*,*) 'xdst differs (more than 0.5%) from CAM5-Oslo value.' 
@@ -46,7 +44,6 @@ csoa      xcam=get_hygroscopicity(4)
 c     Organic carbon (OC) (aerosoltype 3 in CAM5-Oslo) 
 c     (MIRAGE-based (Ghan et al., 2001) for large RH, ~0.25*ammonium-sulfate)
       xoc=0.14 ! This is the value previously used
-csoa      xcam=get_hygroscopicity(3)
       xcam=get_hygroscopicity(AEROSOL_TYPE_OM)
       if(abs((xoc-xcam)/xcam).gt.0.005) then
         write(*,*) 'xoc differs (more than 0.5%) from CAM5-Oslo value.' 
@@ -79,7 +76,6 @@ c     to exist only as ammonium sulfate.
 c     Ammonium sulphate (aerosoltype 1 in CAM5-Oslo)
 c     (Ghan et al., 2001; RHC and RHD from Tang & Minkelwitz, 1994)
       xa=0.507 ! This is the value previously used
-csoa      xcam=get_hygroscopicity(1)
       xcam=get_hygroscopicity(AEROSOL_TYPE_SULFATE)
       if(abs((xa-xcam)/xcam).gt.0.005) then
         write(*,*) 'xa differs (more than 0.5%) from CAM5-Oslo value.' 
@@ -110,7 +106,6 @@ c     as inferred from Table 2 in Kopke et al. (1997):
         xss=-2.333*rh+3.486
       else  
         xss=1.20 ! This is the value previously used
-csoa        xcam=get_hygroscopicity(5)
         xcam=get_hygroscopicity(AEROSOL_TYPE_SALT)
         if(abs((xss-xcam)/xcam).gt.0.005) then
          write(*,*) 'xss differs (more than 0.5%) from CAM5-Oslo value.' 

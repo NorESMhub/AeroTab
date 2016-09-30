@@ -9,8 +9,9 @@ c     LUT is compatible with the CAM5-Oslo version which is being used).
 c
 c     Created by Alf Kirkevåg April 2015. Updated for new SOA treatment July 2015.
 c **********************************************************************************
-csoa  Note tha dry lognormal the fitted size parameters do not depend
-csoa  on the mass fraction fombc for kcomp=1, nor on fbcbg for kcomp=4. 
+c     Note tha dry lognormal the fitted size parameters do not depend
+c     on the mass fraction fombc for kcomp=1, nor on fbcbg for kcomp=4. 
+c **********************************************************************************
 
       use commondefinitions
 
@@ -19,7 +20,7 @@ csoa  on the mass fraction fombc for kcomp=1, nor on fbcbg for kcomp=4.
       INTEGER kcomp, ib, ibcam, itilp, i, iu, iumax, iunr(3)
       REAL xbc, xoc, xs, xa, xss, xdst
       REAL relh(10), catote(16), catot(6), fac(6), fbc(6), faq(6), 
-     $ fombg(6), fbcbg(6)                                          ! csoa
+     $ fombg(6), fbcbg(6)
 
       if(itilp.eq.1) then
         if(kcomp.eq.0) return  ! no logntilp0.out needed (constant r and logsigma)
@@ -53,7 +54,6 @@ c     Adding LUT header info for kcomp*.out:
       elseif(kcomp.eq.2.or.kcomp.eq.3) then
         write(iu,*) 'kcomp, iband, rh, catot, fac, '
       elseif(kcomp.eq.4) then
-csoa        write(iu,*) 'kcomp, iband, rh, catot, fac, faq, '
         write(iu,*) 'kcomp, iband, rh, fbcbg, catot, fac, faq, '
       else ! (kcomp = 5, 6, 7, 8, 9 or 10)
         write(iu,*) 'kcomp, iband, rh, catot, fac, fbc, faq, '
@@ -97,7 +97,6 @@ c     Adding LUT header info for lwkcomp*.out:
       elseif(kcomp.eq.2.or.kcomp.eq.3) then
         write(iu,*) 'kcomp, iband, rh, catot, fac, '
       elseif(kcomp.eq.4) then
-csoa        write(iu,*) 'kcomp, iband, rh, catot, fac, faq, '
         write(iu,*) 'kcomp, iband, rh, fbcbg, catot, fac, faq, '
       else ! (kcomp = 5, 6, 7, 8, 9 or 10)
         write(iu,*) 'kcomp, iband, rh, catot, fac, fbc, faq, '
@@ -123,7 +122,6 @@ c     Adding LUT header info for aerocomk*.out:
       elseif(kcomp.eq.2.or.kcomp.eq.3) then
         write(iu,*) 'kcomp, rh, catot, fac, '
       elseif(kcomp.eq.4) then
-csoa        write(iu,*) 'kcomp, rh, catot, fac, faq, '
         write(iu,*) 'kcomp, rh, fbcbg, catot, fac, faq, '
       else ! (kcomp = 5, 6, 7, 8, 9 or 10)
         write(iu,*) 'kcomp, rh, catot, fac, fbc, faq, '
@@ -181,12 +179,10 @@ c     Adding LUT header info for aerodryk*.out:
         write(iu,*) 'kcomp, cintbg, cintbg05, cintbg125, ', 
      $ 'aaeros, aaerol, vaeros, vaerol'          
       elseif(kcomp.eq.1) then
-csoa         write(iu,*) 'kcomp, catot, fac, '
          write(iu,*) 'kcomp, fombg, catot, fac, '
       elseif(kcomp.eq.2.or.kcomp.eq.3) then
          write(iu,*) 'kcomp, catot, fac, '
       elseif(kcomp.eq.4) then
-csoa        write(iu,*) 'kcomp, catot, fac, faq, '
         write(iu,*) 'kcomp, fbcbg, catot, fac, faq, '
       else ! (kcomp = 5, 6, 7, 8, 9 or 10)
         write(iu,*) 'kcomp, catot, fac, fbc, faq, '
@@ -249,9 +245,6 @@ csoa        write(iu,*) 'kcomp, catot, fac, faq, '
      $ '(ug/m3), fac is the OC (SOA) mass fraction ',
      $ 'of catot (OC & H2SO4) '
       elseif(kcomp.eq.4) then
-csoa        write(iu,*) 'catot is total added internally mixed mass ',
-csoa     $ '(ug/m3) as H2SO4 and (NH4)2SO4, fac is the BC mass fraction ', 
-csoa     $ 'of background OC & BC '
         write(iu,*) 'catot is total added internally mixed mass ',
      $ '(ug/m3) as H2SO4 and (NH4)2SO4, fac is the mass fraction ', 
      $ 'of added SOA/(SOA+Sulfate) '

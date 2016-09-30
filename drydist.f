@@ -5,11 +5,11 @@ c ******************************************************************************
 c     Created by Alf Kirkevåg.
 c **********************************************************************************
 
-c     Dry background mode size distribution, dndlrk, and dry background
-c     aerosol contribution to the mass concentration Ctot (ug/m**3). 
-csoa  Note: this calculation of Ctot does not take into account that the 
-csoa  backrgound aerosol can be an internal mixture of two constituents.
-csoa  This must be compensated for (by scaling) other places in the code. 
+c     Dry background mode size distribution, dndlrk (cm^-3), and dry background
+c     aerosol contribution to the mass concentration Ctot (ug/m^3). 
+c     Note: this calculation of Ctot does not take into account that the 
+c     backrgound aerosol can be an internal mixture of two constituents.
+c     This must be compensated for (by scaling) other places in the code. 
 
       implicit none
 

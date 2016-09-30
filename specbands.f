@@ -13,9 +13,7 @@ c     are to be used in Chandrasekhar averaging of optical parameters
       INTEGER ib, iband, ibm, ibmb, ibme, i, ibcam
       REAL    xlami(32), xlam(31), xlamb(31), xlame(31), fband(31), 
      $ flux(5000), fb(16) 
-ctest
       REAL Fplanck, Fpint, temp
-ctest
 
 ccccc6ccc1ccccccccc2ccccccccc3ccccccccc4ccccccccc5ccccccccc6ccccccccc7cc
 c     define wavelength intervals, depending on desired number of bands
@@ -159,7 +157,7 @@ c               write(78,*) i, Fpint
 c             endif 
 c            enddo
 c           half of the energy found in the last band (22.8) is found for i<~37um, which we
-c           therefore redefine as mid-band, giving xlami(17)=45.0 instaed of 1000. E.g., we do
+c           therefore redefine as mid-band, giving xlami(17)=45.0 instead of 1000. E.g., we do
 c           not perform any Chandrasekhar averaging here (due to the small absoption at these 
 c           long wavelengths).
 ctest

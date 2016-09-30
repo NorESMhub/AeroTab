@@ -25,9 +25,9 @@ c     initializing cref-array:
       do 300 j=1,5
 
 c      refractive indices for background aerosol 
-csoa   Here bacground aerosol does not take into account internal mixing,
-csoa   so this must be taken into account separately in refind.f for modes
-csoa   which have internal mixtures of two constituents! 
+c      Here bacground aerosol does not take into account internal mixing,
+c      so this must be taken into account separately in refind.f for modes
+c      which have internal mixtures of two constituents! 
        if(j.eq.1) then
          if(kcomp.eq.1.or.kcomp.eq.5) then
            open(10, file='input/suso_gads.inp', status='old') 
@@ -38,7 +38,6 @@ csoa   which have internal mixtures of two constituents!
          elseif(kcomp.eq.6.or.kcomp.eq.7) then
 !orig           open(10, file='input/mineral_mix.inp', status='old') 
            open(10, file='input/mineral_gads.inp', status='old') 
-!test
          elseif(kcomp.eq.8.or.kcomp.eq.9.or.kcomp.eq.10) then
            open(10, file='input/ss_gads.inp', status='old')
          else
