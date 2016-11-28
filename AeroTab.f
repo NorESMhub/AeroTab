@@ -73,8 +73,7 @@ c     of overshooting mass w.r.t. upper ceiling in the look-up tables), and sinc
 c     there is still no need for a new mode to fill its "place". 
 c     New treatment for kcomp=1 & 4: fombg and fbcbg are now mass fractions of OM 
 c     or BC in the background aerosol (not radius dependent), instead of using the
-c     trick for kcomp=4 of redifining fac. fac has now the same meaning for all 
-c     modes. 
+c     trick for kcomp=4 of redifining fac. fac has now the same meaning for all modes. 
 c     
 c     May 2016:
 c     Recalibrate cate and cate (in modepar.f) to allow for more/less maximum added
@@ -85,6 +84,17 @@ c     icat and icate) can be calculated based on the min and max array values...
 c     Look-up tables for CCN have not been used or needed since CCM-Oslo/early CAM-Oslo,
 c     and is now removed as an option (since it has not been checked for bugs and 
 c     inconsistencies).
+c
+c     October 2016: 
+c     BC sizes for kcomp = 0 and 2 have been modified, as has also the mass density
+c     and refractive index for dust, see the gihub issues NE-274 (Short literature 
+c     study on size parameters for emitted and coagulated BC) and NE-344 (Conservation 
+c     of both mass and number of hydrophobic to hydrophilic BC_AX), NE-388 (See if 
+c     the BC mass absorption coefficient (MAC) can be increased/improved), and the 
+c     background document for NE-274, covering also the two other mentioned issues.   
+c     A bug was also found and corrected in conteq.f, which since SOA has been 
+c     introduced has caused an underestimae in the condensated mass of SOA (ca. 18% 
+c     loss column integrated, globally).  
 c
 c     Future improvement: Since the calculation of size distributions takes very long
 c     time for some modes, both LW and SW optics (a big job) and lognormal fitting for 
@@ -136,13 +146,12 @@ ccccc6ccc1ccccccccc2ccccccccc3ccccccccc4ccccccccc5ccccccccc6ccccccccc7cc
 
 c     Assumed radius for coagulating (fine mode) particles in um  
 c     (a common coagulation radius rcoag=0.04 um was used originally)
-      PARAMETER (rcoag_so4n = 0.0118)  ! rk for kcomp=1
-      PARAMETER (rcoag_bcn  = 0.0118)  ! rk for kcomp=2
-      PARAMETER (rcoag_ocn  = 0.04)    ! rk for kcomp=3
-cNB:  This should perhaps be done more consistently with her and in CAM5-Oslo,     ---------------NB---------
-cNB:  with larger radii, especially for OC (only 40 nm mode and larger now),       ---------------NB---------
-cNB:  but also for BC (and SO4), since 40 nm's BC from OM&BC is also coagulated    ---------------NB---------
-cNB:  in CAM5-Oslo...                                                              ---------------NB---------
+co      PARAMETER (rcoag_so4n = 0.0118)  ! rk for kcomp=1
+co      PARAMETER (rcoag_bcn  = 0.0118)  ! rk for kcomp=2
+co      PARAMETER (rcoag_ocn  = 0.04)    ! rk for kcomp=3
+      PARAMETER (rcoag_so4n = 0.025)   ! rk for kcomp=1
+      PARAMETER (rcoag_bcn  = 0.025)   ! rk for kcomp=2
+      PARAMETER (rcoag_ocn  = 0.06)    ! rk for kcomp=3
 
 c     Do not modify the following input:
 c     number of iterations in the Smolarkiewicz advection scheme, ismolar, and
@@ -349,21 +358,21 @@ c               and points of deliquescence & crystallisation
 c              do 540 ifombg = 1,1
 
               do 540 ifbcbg = ifbcbg1, ifbcbg2
-c              do 540 ifbcbg = 1,1
+c              do 540 ifbcbg = 6,6
 
              do 540 ictot  = ictot1, ictot2
             do 540 ictote = ictote1, ictote2
 c            do 540 ictot = 6,6
-c            do 540 ictote = 14,14
+c            do 540 ictote = 16,16
 
           do 540 ifac = ifac1, ifac2
-c          do 540 ifac = 1,1
+c          do 540 ifac = 6,6
 
         do 540 ifbc = ifbc1, ifbc2
 c        do 540 ifbc = 1,1
 
       do 540 ifaq = ifaq1, ifaq2
-c      do 540 ifaq = 1,6
+c      do 540 ifaq = 1,1
 
       if(kcomp.eq.1) then
        write(*,*) 'kcomp,irelh,ifombg,ictote,ifac=',
@@ -385,7 +394,7 @@ c      do 540 ifaq = 1,6
      $ kcomp,irelh,ictot,ifac,ifbc,ifaq 
       endif
 
-cX     extra test loop for hygroscopic growth (with e.g., irelh=1,1)
+cX     extra test loop for hygroscopic growth (with e.g., irelh=1,1 in the loop above)
 c      do 540 irh=1,99
 c      rh=0.01*real(irh)
 c      do 540 irh=1,199
@@ -416,7 +425,7 @@ c     BC and OC (from coagulation), respectively.
         if(kcomp.ge.1.and.kcomp.le.4) then
           Caso4=(1.0-frac(ifac))*catote(ictote) !  added Sulfate from condensation (H2SO4)
         else
-          Caso4=(1.0-frac(ifac))*catot(ictot)     !  added Sulfate from condensation and coagulation (H2SO4) and wet phase ((NH4)2SO4)
+          Caso4=(1.0-frac(ifac))*catot(ictot)   !  added Sulfate from condensation and coagulation (H2SO4) and wet phase ((NH4)2SO4)
         endif
         if(Caso4.lt.1.e-40) Caso4=1.e-40        
         if(kcomp.ge.1.and.kcomp.le.4) then
@@ -449,9 +458,9 @@ c       contribution to Ctot from the background mode
        if(kcomp.eq.1) then
         Ctot0=Ctotnull*(1.0+vombg*(rhooc/rhob-1.0)) ! -> Ctotnull*0.815 for ren OM (vombg=fombg=1).
        elseif(kcomp.eq.4) then
-        Ctot0=Ctotnull*(1.0+vbcbg*(rhobc/rhob-1.0)) ! -> Ctotnull*1.333 for ren BC (vbcbg=fbcbg=1).
-        write(*,*) 'Ctotnull =', Ctot0
+        Ctot0=Ctotnull*(1.0+vbcbg*(rhobc/rhob-1.0)) ! -> Ctotnull*1.2 for ren BC (vbcbg=fbcbg=1).
        endif
+c        write(*,*) 'Ctotnull =', Ctot0
         write(999,*) 'background contribution:'
         write(999,*) Ctot0
 c       contribution to Ctot from internally mixed (non-background) H2SO4 and (NH4)2SO4
@@ -528,7 +537,7 @@ ct
           numb=numb+dndlrkny(i)*d
 c         write(12,100) r(i), dndlrk0(i) 
 c         write(13,100) r(i), dndlrkny(i)
-c          write(14,100) r(i), dndlrkny(i)*(4.0*pi/3.0)*r(i)**3
+c         write(14,100) r(i), dndlrkny(i)*(4.0*pi/3.0)*r(i)**3
           if(ib.ne.19) then
            write(9001,500) r(i), dndlrkny(i),  
      $      cat, fac, fabc, faq, rh, kcomp

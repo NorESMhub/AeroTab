@@ -9,7 +9,8 @@ c     Calculation of radius dependent diffusion coefficients for sulfate or SOA 
       implicit none
 
       INTEGER i, imax
-      REAL diff, mfv, th, r(0:100), Dm(0:101), alpha
+cerr      REAL diff, mfv, th, r(0:100), Dm(0:101), alpha
+      REAL diff, mfv, th, r(0:100), Dm(0:100), alpha
 
       do i=0,imax
         Dm(i)=diff/(r(i)/(r(i)+mfv)+4.0*diff/(alpha*th*r(i)))   ! unit um^2/s

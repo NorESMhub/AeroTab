@@ -427,6 +427,7 @@ c          write(51,3000) lam, gass(iband)
 c          write(52,3000) lam, bext(iband)
 c          write(53,3000) lam, kext(iband)
 c          write(54,3000) lam, kext(iband)*Ctot/Cdry
+c          write(55,3000) lam, kext(iband)*(1.0-omega(iband))
 c            write(*,*) iband, lam
 c        enddo
 

@@ -32,7 +32,8 @@ c      which have internal mixtures of two constituents!
          if(kcomp.eq.1.or.kcomp.eq.5) then
            open(10, file='input/suso_gads.inp', status='old') 
          elseif(kcomp.eq.2) then
-           open(10, file='input/sot_janzen.inp', status='old') 
+cbc           open(10, file='input/sot_janzen.inp', status='old') 
+           open(10, file='input/sot_bond.inp', status='old') 
          elseif(kcomp.eq.3.or.kcomp.eq.4) then
            open(10, file='input/waso_gads.inp', status='old') 
          elseif(kcomp.eq.6.or.kcomp.eq.7) then
@@ -48,7 +49,8 @@ c      with the background aerosol
        elseif(j.eq.2) then
          open(10, file='input/suso_gads.inp', status='old')
        elseif(j.eq.3) then
-         open(10, file='input/sot_janzen.inp', status='old')
+cbc         open(10, file='input/sot_janzen.inp', status='old')
+           open(10, file='input/sot_bond.inp', status='old') 
        elseif(j.eq.4) then
          open(10, file='input/water_gads.inp', status='old')
        elseif(j.eq.5) then ! assumed OC refractive index

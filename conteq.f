@@ -63,8 +63,8 @@ ccccc6ccc1ccccccccc2ccccccccc3ccccccccc4ccccccccc5ccccccccc6ccccccccc7cc
       REAL NrDsoa, dvsoa, dvconsoa, vombg, vbcbg, rhobg
 
 c     Critical radius for cloud processing, rc, ranging between rcmin and 
-c     rcmax, from Chuang and Penner (1995). We have assumed that this
-c     range is independent of background aerosol 
+c     rcmax (and smoothed over this range), from Chuang and Penner (1995). 
+c     We have assumed that this range is independent of background aerosol 
       PARAMETER (rcmin=0.05, rcmax=0.2)
 
       PARAMETER (pi=3.141592654, e=2.718281828 )
@@ -128,11 +128,17 @@ c     For SOA, add condensation --> NrDsoa (NrD is for so4 only)!
       NK12oc=0.0          ! OC (OM)
       NK12so4=0.0         ! H2SO4
       do i=0,imax
-        NrD=NrD+dndlrkny(i)*Dm(i)*r(i)*d           ! unit 1.e-12 s^-1 
-        NrDsoa=NrDsoa+dndlrkny(i)*Dmsoa(i)*r(i)*d  ! unit 1.e-12 s^-1
-        NK12=NK12+dndlrkny(i)*K12(i)*d             ! unit 1.e-12 s^-1 
-        NK12oc=NK12oc+dndlrkny(i)*K12oc(i)*d       ! unit 1.e-12 s^-1
-        NK12so4=NK12so4+dndlrkny(i)*K12so4(i)*d    ! unit 1.e-12 s^-1 
+cerr        NrD=NrD+dndlrkny(i)*Dm(i)*r(i)*d           ! unit 1.e-12 s^-1 
+cerr        NrDsoa=NrDsoa+dndlrkny(i)*Dmsoa(i)*r(i)*d  ! unit 1.e-12 s^-1
+cerr        NK12=NK12+dndlrkny(i)*K12(i)*d             ! unit 1.e-12 s^-1 
+cerr        NK12oc=NK12oc+dndlrkny(i)*K12oc(i)*d       ! unit 1.e-12 s^-1
+cerr        NK12so4=NK12so4+dndlrkny(i)*K12so4(i)*d    ! unit 1.e-12 s^-1 
+c       corrected 18/10-2016
+        NrD=NrD+dndlrkny(i)*Dmp(i)*rp(i)*d           ! unit 1.e-12 s^-1 
+        NrDsoa=NrDsoa+dndlrkny(i)*Dmpsoa(i)*rp(i)*d  ! unit 1.e-12 s^-1
+        NK12=NK12+dndlrkny(i)*Kp12(i)*d              ! unit 1.e-12 s^-1 
+        NK12oc=NK12oc+dndlrkny(i)*Kp12oc(i)*d        ! unit 1.e-12 s^-1
+        NK12so4=NK12so4+dndlrkny(i)*Kp12so4(i)*d     ! unit 1.e-12 s^-1 
       enddo
 
 c     Process specific volumes per volume of dry air to be added (unit: 
@@ -143,7 +149,7 @@ c     (s1) and coagulation (s2) exists (like in the nucleation mode) as H2SO4
       dvs2=(fcoagk/Nnatk)*1e-9*frcoag*Caso4/rhosv           ! volume of H2SO4 coagulate
       dvbc=(fcoagk/Nnatk)*1e-9*Cabc/rhobc                   ! volume of BC coagulate 
       if(kcomp.ge.1.and.kcomp.le.4) then        ! OC only comes as SOA 
-        dvsoa=1e-9*Caoc/rhooc
+        dvsoa=1.e-9*Caoc/rhooc
         dvoc=1.e-50
       else                                      ! SOA is lumped together with and treated as OC coagulate 
         dvsoa=1.e-50
@@ -159,12 +165,25 @@ c     jmax is doubled. Also estimate the necessary amount of
 c     "moves to the right" (ix), to facicitate a solution.
       rjmg=0.0
       do i=ix+1,imax
+
+          dvcon=dvs1*rp(i)*Dmp(i)/NrD        ! as H2SO4 
+          dvcos=dvs2*Kp12so4(i)/NK12so4      ! as H2SO4
+          dvcoa=dvbc*Kp12(i)/NK12  
+          dvcoaoc=dvoc*Kp12oc(i)/NK12oc
+
 c       dv* unit: ug/m^3/(ug/m^3/cm^-3)=cm^3
-        dvcon=dvs1*r(i)*Dm(i)/NrD
-        dvcos=dvs2*K12so4(i)/NK12so4
-        dvcoa=dvbc*K12(i)/NK12
-        dvcoaoc=dvoc*K12oc(i)/NK12oc
-        dvconsoa=dvsoa*r(i)*Dmsoa(i)/NrDsoa
+cerr        dvcon=dvs1*r(i)*Dm(i)/NrD
+cerr        dvcos=dvs2*K12so4(i)/NK12so4
+cerr        dvcoa=dvbc*K12(i)/NK12
+cerr        dvcoaoc=dvoc*K12oc(i)/NK12oc
+cerr        dvconsoa=dvsoa*r(i)*Dmsoa(i)/NrDsoa
+c       corrected 18/10-2016
+        dvcon=dvs1*rp(i)*Dmp(i)/NrD
+        dvcos=dvs2*Kp12so4(i)/NK12so4
+        dvcoa=dvbc*Kp12(i)/NK12
+        dvcoaoc=dvoc*Kp12oc(i)/NK12oc
+        dvconsoa=dvsoa*rp(i)*Dmpsoa(i)/NrDsoa
+c
         dv=dvcon+dvcoa+dvcos+dvcoaoc+dvconsoa
 c       (Possible improvement for small added volumes: use Taylor series...)
         rjm=3e12*dv/(4.0*pi*r(i)**3.0*((1.0+d/log10(e))**3.0-1.0))
@@ -238,6 +257,7 @@ c      do i=1,imax
 c     Then solve continuity equation using jmax time steps/iterations 
       do 20 j=1,jmax
 
+c
         rc=rcmin+j*(rcmax-rcmin)/jmax
 
 c       Initialization of key variables for each time step
@@ -282,9 +302,9 @@ c       per volume of dry air to be added (per particle) in each size bin
           dvcos=dvs2*Kp12so4(i)/NK12so4      ! as H2SO4
           dvcoa=dvbc*Kp12(i)/NK12  
           dvcoaoc=dvoc*Kp12oc(i)/NK12oc
-          dvconsoa=dvsoa*r(i)*Dmsoa(i)/NrDsoa
+cerr          dvconsoa=dvsoa*r(i)*Dmsoa(i)/NrDsoa
+          dvconsoa=dvsoa*rp(i)*Dmpsoa(i)/NrDsoa   ! corrected 18/10-2016
           dv=dvcon+dvaq+dvcoa+dvcos+dvcoaoc+dvconsoa
-
 c         Find the incement of log(r/um) at r=rp, i.e. in the center 
 c         of the size bin, dip
           radikand=1.0+3.0e12*dv/(4.0*pi*rp(i)**3.0)
@@ -487,6 +507,9 @@ c*****************************************
       write(999,*) 'Ctot integrated / Ctot in =', 
      $ (cintbc + cintoc + cintsc + cintsa + cintbg) /      
      $ (Ctot0 + Caso4 + Cabc + Caoc) 
+
+c      write(1001,*) 'cintoc/Caoc = ', cintoc/Caoc 
+c      write(1002,*) 'cintoc, Caoc = ', cintoc, Caoc 
  
 c     Dry volume fractions for H2SO4+(NH4)2SO4, vsi, soot, vbci, oc, voci,
 c     and background aerosol, vai. Note that vsi+vbci+voci+vai=1.  

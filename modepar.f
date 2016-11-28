@@ -23,6 +23,8 @@ c     version, since there is now in general more added mass per background part
 c     The cat and cate arrays have also been changed so that their values (for varying
 c     icat and icate) can be calculated based on the min and max array values...
 
+c     October 201: recalibrated cate for kcomp=2 due to ca. doubling in background size
+
       use commondefinitions
 
       implicit none
@@ -71,7 +73,8 @@ c        write(*,*) 'BC(A/n), BC background for cond. of H2SO4'
 co        catote=(/ 1e-10, 1e-5, 2e-5, 4e-5, 8e-5, 1.5e-4, 3e-4,
 co     $  6e-4, 1.2e-3, 2.5e-3, 5e-3, 1e-2, 2e-2, 4e-2, 8e-2, 0.15 /)
         do icat=2,16
-           catote(icat)=10**((icat-1)/3.0-6.523)
+co           catote(icat)=10**((icat-1)/3.0-6.523)
+           catote(icat)=10**((icat-1)/3.0-6.222)
         enddo
       elseif(kcomp.eq.3) then     ! this mode is not defined/used in CAM-Oslo
 c        write(*,*) 'OC(A/n), OC background for cond. of H2SO4' 
