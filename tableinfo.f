@@ -2,7 +2,7 @@
      $ fombg, fbcbg, catote, catot, fac, fbc, faq, ib, ibcam, itilp)
 
 c **********************************************************************************
-c     Adding header information for the opened look-up table (LUT) files, both as an
+c     Add header information for the opened look-up table (LUT) files, both as an
 c     explanation what the files contain, and to facilitate checking important input-
 c     info assumed in AeroTab against CAM5-Oslo (to make sure that this particular
 c     LUT is compatible with the CAM5-Oslo version which is being used).
@@ -27,14 +27,19 @@ c ******************************************************************************
         iumax=1
         iunr(1)=9003   ! logntilp*.out   
       elseif(itilp.eq.0.and.(ib.eq.31.or.ib.eq.19)) then
-        iumax=3
+cx        iumax=3
         if(ib.eq.31) then
-          iunr(1)=9000 ! kcomp*.out
+          iumax=3
+          iunr(1)=9000   ! kcomp*.out
+          iunr(2)=9500   ! aerocomk*.out       
+          iunr(3)=9600   ! aerodryk*.out      
         else
-          iunr(1)=9009 ! lwkcomp*.put
+cx        iumax=3
+          iumax=1
+          iunr(1)=9009   ! lwkcomp*.put
         endif
-        iunr(2)=9500   ! aerocomk*.out       
-        iunr(3)=9600   ! aerodryk*.out      
+cx        iunr(2)=9500   ! aerocomk*.out       
+cx        iunr(3)=9600   ! aerodryk*.out      
       endif     
 
       do i=1,iumax

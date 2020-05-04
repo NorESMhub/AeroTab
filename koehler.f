@@ -64,14 +64,6 @@ c     find interpolated dry vulume fractions for the new grid
           vbck(i)=vbci(imax)  
           vock(i)=voci(imax) 
         endif
-ctest
-c          vsk(i)=0.0
-c          vbck(i)=0.0
-c          vock(i)=0.0 
-ctest
-c          write(113,*) rk(i), vsk(i)
-c          write(114,*) rk(i), vock(i)
-c          write(115,*) rk(i), vbck(i)
       enddo
 
       if(iopt.eq.1) then ! for hygroscopic growth calculations      
@@ -98,7 +90,6 @@ c          the Koehler equation
      $       -x/((rk(i)/rk(j))**3-1.0))
            if(i.eq.imaxx.and.rhum.lt.rh) jxbound=jxbound+1
            if(jxbound.eq.1) jmaxf=j-jstep
-c           if(j.eq.410) write(251,*) j, i, rhum    
          enddo
 c        if rad < rk(imaxx) then use result from koehler formula 
          if(jxbound.eq.0) then  
@@ -143,8 +134,6 @@ c      remap f and fm to the original resolution
          fm(i)=fmk(j) 
          if(i.gt.imax-2) f(i)=f(imax-2)
          if(i.gt.imax-2) fm(i)=fm(imax-2)
-c         write(110,*) r(i), fm(i)
-c         write(111,*) r(i), f(i)
        enddo
 
       endif  ! iopt

@@ -4,17 +4,21 @@
 c **********************************************************************************
 c     Created by Alf Kirkevåg. The code is originally based on the method developed 
 c     and described by Kirkevåg, A., Iversen, T., and Dahlback, A. (1999): On radiative 
-c     effects of black carbon and sulphate aerosols. Atmos. Environ. 33, 2621-2635. 
+c     effects of black carbon and sulphate aerosols. Atmos. Environ. 33, 2621-2635, and
+c     Kirkevåg, A., and Iversen, T. (2002): Global direct radiative forcing by process-
+c     parameterized aerosol optical properties. J. Geophys. Res. 107, 10.1029/2001JD000886     
 c **********************************************************************************
-
+c
 c     This program defines initial size distributions (at the point of emission) 
 c     and microphysical properties, such as hygroscopicity and wevelength dependent 
 c     refractive indices, then calculates the modified aerosol size distributions 
-c     (after aerosol processing), and finally it performs Mie and CCN or dry size 
-c     parameter calculations for the clean or internally mixed aerosol modes as a 
-c     function of relative humidity (or supersaturation for CCN) and added internally 
-c     mixed BC, OC and sulfate. The output is a range of look-up tables (*.out) for 
-c     use in CAM5-Oslo (with only some CAM-Oslo/CAM4-Oslo functionality retained). 
+c     after aerosol processing (aging and hygroscopic growth), and finally calculates
+c     the gross aerosol optical properties or dry size parameters for lognormal fits
+c     to the generally non-lognormal modified size distributions, all as functions
+c     added concentrations of internally mixed BC, OC and sulfate from different
+c     microphysical processes, and anbient relative humidity (for the optics). The
+c     output is a range of look-up tables (*.out) for use in CAM6-Nor (with only some
+c     CAM-Oslo/CAM4-Oslo and most CAM5.3-Oslo functionality retained). 
 c
 c     References for CAM-Oslo (based on CAM3):
 c     Kirkevåg, A., Iversen, T., Seland, Ø., Debernard, J.B., Storelvmo, T., and 
@@ -28,86 +32,52 @@ c     Kirkevåg, A., T. Iversen, Ø. Seland, C. Hoose, J. E. Kristjánsson, H. S
 c      A. Ekman, S. Ghan, J. Griesfeller, D. Nilsson, and M. Schulz: Aerosol-climate 
 c      interactions in the Norwegian Earth System Model - NorESM1-M, Geosci. Model Dev., 
 c      6, 207-244, doi:10.5194/gmd-6-207-2013, 2013. 
-c     CAM5-Oslo is at present under development. Reference for nucleation and simplest
-c     SOA treatment (assuming SOA->SO4): Makkonen, R., Seland, Ø., Kirkevåg, A., Iversen, 
-c     T., and Kristjánsson, J. E.: Evaluation of aerosol number concentrations in NorESM 
-c     with improved nucleation parameterisation, Atmos. Chem. Phys. 14, 5127-5152, 
-c     doi:10.5194/acp-14-5127-2014, 2014. 
-
+c     References for CAM5.3-Oslo (based on CAM5.3):
+c     Kirkevåg, A., A. Grini, D. Olivié, Ø. Seland, K. Alterskjær, M. Hummel,
+c      I. H. H. Karset, A. Lewinschal, X. Liu, R. Makkonen, I. Bethke, J. Griesfeller,
+c      M. Schulz, T. Iversen: A production-tagged aerosol module for Earth system models,
+c      OsloAero5.3 – extensions and updates for CAM5.3-Oslo, Geosci. Model Dev., 11,
+c      3945-3982, https://doi.org/10.5194/gmd-11-3945-2018, 2018.      
+c     References for CAM6-Nor (based on CAM6):
+c     Seland et al. (submitted to GMD) and Olivie et al (in prep.), and
+c     Kirkevåg (2020): AeroTab user guide (a techinical report).     
 C ===================================================================================
-C Notes on past and present code development:
-C     Since the CAM4-Oslo look-up tables were made, some parts of the code have been
-C     slightly modified: The diffusion coefficient and mean free path for sulfuric acid 
-C     (H2SO4) have been updated, see constize.f. Therefore, do not expect to reproduce 
-C     the old look-up tables exactly as they were (small changes).  
 C
-C     One inconsistency compared with the CAM4-Oslo life cycle model description in 
-C     Kirkevåg et al. (2013), is that the OC(n) mode (kcomp=3 without condensed SO4), 
-C     is still used when excessive OM mass (exceeding the max table values defined in
-C     modepar.f) is lumped in the model. Should we remove this mode and rather lump 
-C     mass to a clean OM&BC(Ait) mode (kcomp=4 without condensed SO4)? (See below).
+C     Notes on the most recent code development from CAM5.3-Oslo to CAM6-Nor, see
+C     Olivie et al (in prep.) or Kirkevåg (2020) for full references:
+c     In the Mie calculations for mineral dust (DU) optical properties in CAM5.3-Oslo,
+c     the assumed complex refractive index was that of Hess et al. (1998) (OPAC) for
+c     all wavelengths, λ. For wavelengths between 3 and 15μm we now use the multi-site
+c     mean from Di Biagio et al. (2017). In lack of other (spectrally complete) updated
+c     observation data, we keep the OPAC values at λ > 15μm as in CAM5.3-Oslo. To be able
+c     to cover the whole SW wavelength range we make use of a composite of updated
+c     observation data for the real (nr) and imaginary part (ni) of the refractive index:
+c     Haapanala et al (2012) for λ ≤ 0.29μm and in the range 1.05μm ≤ λ ≤ 2.64μm; Shettle
+c     and Fenn (1979) for nr and Colarco et al.(2002) (Dakar values) for ni in the range
+c     0.331μm ≤ λ ≤ 0.36μm; Duboviket al. (2002) (Bahrain, Solar Village, Cape Verde)
+c     for λ= 0.44μm and in therange 0.67μm ≤ λ ≤ 1.02μm; Shettle and Fenn (1979) for nr
+c     and Kim et al.(2011) for ni for λ = 0.55. Between bands and wavelengths mentioned
+c     but not covered by the above, refractive indices are found by use of linear
+c     interpolation.
 c
-c     April 2013:
-C     Due to new SOA treatment, the OC(n) mode may be needed anyway. Possible changes 
-C     to accomodate this may be: add condensed SOA to BC(n/Ait), OC(n/Ait), and (as 
-C     proposed by R. Makkonen) SO4(n/Ait). So far only the SO4(n/Ait) mode has been 
-C     included in this code. 
-c   
-C     A possible simplification to think about for CAM5-Oslo: 
-C     let DU(c) and SS(c) be externally mixed only. 
-C     Additional functionality:
-C     Consider to include for ib=31: abs550 for each component (in aerocomk*.out)!
-c
-C     August 2014: Removing dependencies on molar weights (Ms, Msv and Mso4) to 
-C     facilitate corresponding simplifications in CAM5-Oslo. 
-c 
-C     April 2015: remove modes (kcomp=) 11,12,14, and rename mode 13 to 0. Also:
-C     r12 is renamed rbcn.
-c
-c     July 2015:
-c     Including new SOA treatment, allowing for condensation of VOC/SOA onto all 
-c     background modes kcomp= 1 - 10, but treated as OM coagulate for modes 5-10
-c     (the same way that H2SO4 condensate is treated as coagulate for these modes).
-c     We still keep kcomp=3, since it may be used in parts of the code (for lumping
-c     of overshooting mass w.r.t. upper ceiling in the look-up tables), and since
-c     there is still no need for a new mode to fill its "place". 
-c     New treatment for kcomp=1 & 4: fombg and fbcbg are now mass fractions of OM 
-c     or BC in the background aerosol (not radius dependent), instead of using the
-c     trick for kcomp=4 of redifining fac. fac has now the same meaning for all modes. 
-c     
-c     May 2016:
-c     Recalibrate cate and cate (in modepar.f) to allow for more/less maximum added
-c     mass on each background mode, due to large changes since the first AeroTab
-c     version, since there is now in general more added mass per background particle.  
-c     The cat and cate arrays have also been changed so that their values (for varying
-c     icat and icate) can be calculated based on the min and max array values...
-c     Look-up tables for CCN have not been used or needed since CCM-Oslo/early CAM-Oslo,
-c     and is now removed as an option (since it has not been checked for bugs and 
-c     inconsistencies).
-c
-c     October 2016: 
-c     BC sizes for kcomp = 0 and 2 have been modified, as has also the mass density
-c     and refractive index for dust, see the gihub issues NE-274 (Short literature 
-c     study on size parameters for emitted and coagulated BC) and NE-344 (Conservation 
-c     of both mass and number of hydrophobic to hydrophilic BC_AX), NE-388 (See if 
-c     the BC mass absorption coefficient (MAC) can be increased/improved), and the 
-c     background document for NE-274, covering also the two other mentioned issues.   
-c     A bug was also found and corrected in conteq.f, which since SOA has been 
-c     introduced has caused an underestimae in the condensated mass of SOA (ca. 18% 
-c     loss column integrated, globally).  
-c
-c     Future improvement: Since the calculation of size distributions takes very long
-c     time for some modes, both LW and SW optics (a big job) and lognormal fitting for 
-c     RH=0 (easier to fix) should be done at the same time, as soon as the modified 
-c     size distributions are made, instead of running AeroTab 3 times as is equired 
-c     in its present form.  
-c
+c     A new feature as of February 2020 is the optional simplified treatment of how size
+c     distributions change as they age and grow by hygroscopic swelling. This AeroTab
+c     light  version (light=.true.) is the same as the standard version except for the 3
+c     subroutines conteqlight.f, rhsublight.f and modetilp-light.f, which replace the
+c     standard code files conteq.f, rhsub.f and modetilp.f. The simplifying assumptions
+c     are that all internal mixing is here homogeneous with respect to size (within a mixture/
+c     mode, kcomp), regardless of production mechanism, and that the modified number size
+c     distributions including growth remain log-normal. As in the aerosol microphysics schemes
+c     in CESM (e.g. MAM3), we let the median modal radius change while keeping the standard
+c     deviation constant. This is described in more detail in the "AeroTab user guide" found
+c     at the NorESM github documentions repository.      
 C ===================================================================================
 
+      
       implicit none
 
 ccccc6ccc1ccccccccc2ccccccccc3ccccccccc4ccccccccc5ccccccccc6ccccccccc7cc
-      INTEGER  kcom, iband
+      INTEGER  kcom, iband, ifile
       INTEGER  i, imax, imini, imaxi, is, icl, ib, ibcam, ictot, kcomp,
      $ kc, ksol, itot, ifbc, ifac, ifaq, irelh, iopt, ismolar, 
      $ ismolarh, irh, itilp, ifombg, ifbcbg
@@ -118,8 +88,8 @@ ccccc6ccc1ccccccccc2ccccccccc3ccccccccc4ccccccccc5ccccccccc6ccccccccc7cc
      $ dndlrk0(0:100), dndlrk(0:100), dndlrkny(0:100), 
      $ vbci(0:100), voci(0:100), vsi(0:100), vai(0:100), vssol(0:100), 
      $ vbcsol(0:100), vocsol(0:100), vasol(0:100), vw(0:100) 
-      REAL rk, r0, rbcn, rcoag, d, ntot, Nnatk, Nnat, fcondk, 
-     $ fcoagk, faqk, logsk, logs0, 
+      REAL rk, rkny, rknywet, r0, rbcn, rcoag, d, ntot, Nnatk, Nnat,
+     $ fcondk, fcoagk, faqk, logsk, logs0, 
      $ rhos, rhosv, rhoc2, rhobc, rhooc, rhob, rhow, th, mfv, diff,  
      $ Cac, Cabc, Caoc, Cas1, Cas2, Cas3, Caso4, Ctot, Cdry, dCtot, cat, 
      $ fac, fabc, faq, rh, numb, bcint, cintbg, 
@@ -140,12 +110,12 @@ ccccc6ccc1ccccccccc2ccccccccc3ccccccccc4ccccccccc5ccccccccc6ccccccccc7cc
       REAL xbc, xdst, xoc, xs, xa, xss, rhda, rhca, rhdss, rhcss
       REAL diffsoa, thsoa, mfvsoa, Dmsoa(0:100), Dmpsoa(0:100)
       REAL pi, e, testnumb 
+      LOGICAL light, lightconteq, lightrhsub, extradiag
       COMPLEX cref(5,31)
       PARAMETER  (pi=3.141592654, e=2.718281828)
       PARAMETER (eps=1.e-50)
 
 c     Assumed radius for coagulating (fine mode) particles in um  
-c     (a common coagulation radius rcoag=0.04 um was used originally)
 co      PARAMETER (rcoag_so4n = 0.0118)  ! rk for kcomp=1
 co      PARAMETER (rcoag_bcn  = 0.0118)  ! rk for kcomp=2
 co      PARAMETER (rcoag_ocn  = 0.04)    ! rk for kcomp=3
@@ -157,27 +127,34 @@ c     Do not modify the following input:
 c     number of iterations in the Smolarkiewicz advection scheme, ismolar, and
 c     a different ismolarh for hygroscopic growth than for dry distributions:
       PARAMETER  (ismolar=2, ismolarh=3)
-c     no aportioning between modes (i.e., all material is added onto the same mode): 
+c     No aportioning between modes (i.e., all material is added onto the same mode): 
 c     (this is relevant to modify only when this code is part of a larger multimodal
 c     scheme, i.e. for distribution of internally mixed mass onto more than one mode
-c     at the time).
+c     at the time. The offline code for a multimodal scheme does has not been updated,
+c     and is not part of this AeroTab package).      
       PARAMETER  (Nnatk=1.0, fcondk=1.0, fcoagk=1.0, faqk=1.0)
 
-c     Modify the following input to create different sets of look-up tables:
-c     Let iopt=1 for optics tables (CCN look-up tables for CAM-Oslo with diagnostic 
-c     CDNC is no longer available), or iopt=0 for size distribution calculations 
-c     (used in CCN activation in CAM4-Oslo and CAM5-Oslo with prognostic CDNC):
+c     Modify the following input to create different sets of look-up tables:      
+c     **************************************************************************
+c     Let iopt=1 for optics tables, or iopt=0 for size distribution calculations 
+c     (used in CCN activation in CAM4/5-Oslo and CAM6-Nor with prognostic CDNC):
       iopt=1
-c     Lognormal mode fitting (itilp=1, iopt=0) --> logntilp*.out (and nkcomp.out 
-c     for dry, modified size distributions). 
+c     Lognormal mode fitting (itilp=1, iopt=0) --> logntilp*.out, or not:
       itilp=1-iopt  
 c     Outout for iopt=1 --> lwkcomp*.out or kcomp*.out, aerodryk*.out, 
 c     aerocomk*.out, and nkcomp*.out (for size distributions for all RH).
-c     SW: ib=29 (ave.=>12) SW "bands" (CAMRT), or
+c     SW: ib=29 (ave.=>12) (CAMRT), or
 c     SW: ib=31 (ave.=>14) (RRTMG) (Added November 2013), or
 c     LW: ib=19 (ave.=>16) (RRTMG) (Added November 2013):
       ib=31
-
+c     Use AeroTab light version (light=.true.) or the standard CMIP6 version?
+      light=.false.
+c     Take out extra diagnistics for inspection of number and volume size
+c     distributions and optical parameters?
+c      extradiag=.true.
+      extradiag=.false.
+c     **************************************************************************
+      
 C     Initialization and calculations of look-up tables starts here...       
 
       if(ib.eq.29) then
@@ -186,19 +163,18 @@ C     Initialization and calculations of look-up tables starts here...
       endif
 
 c     Define spectral bands and spectral solar fluxes (at TOA) to be used 
-c     in Chandrasekhar averaging of the optical parameters (in sizemie)
+c     in Chandrasekhar averaging of the optical parameters (in sizemie):
       call specbands(ib, xlami, xlam, xlamb, xlame, fband, fb, ibcam)
 
-c     Define constants and parameters for calculations of size distributions   
-c     (Move some of this to modepar.f!)
+c     Define constants and parameters for calculations of size distributions:
       call constsize(d, imax, imaxi, r, rp, r0, rbcn, logs0,
      $ rhobc, rhooc, rhos, rhosv, rhoc2, rhow, 
      $ bcint, fracdim, diff, th, mfv, diffsoa, thsoa, mfvsoa)
 
 c     The main loop over aerosol mode number for background modes, kcomp=1,10, 
 c     plus kcomp=0, for the fractal BC(ac) mode (use itot=0). For this mode no 
-c     lognormal mode fitting is needed (it is assumed to be hydrophobic and 
-c     therefore not giving any CCN or CDNC contribution).  
+c     lognormal mode fitting is needed: it is assumed to be hydrophobic and 
+c     therefore not giving any CCN or CDNC contribution.  
 
       do kcomp=0,10   ! for look-up tables, kcomp=0,10 (only kcomp=1-10 needed for logntilp*.out)
 
@@ -208,85 +184,98 @@ c     therefore not giving any CCN or CDNC contribution).
           itot = 1     ! subject to added mass by condensation etc.
        endif
 
-c     Set parameters for prescribed initial dry lognormal size 
-c     distributions, and grid for tabulated optical parameters (or CCN)
+c     Set parameters for prescribed initial dry lognormal size distributions,
+c     and define the arrays for the input parameters to the look-up tables:
 ccccc6ccc1ccccccccc2ccccccccc3ccccccccc4ccccccccc5ccccccccc6ccccccccc7cc
       call modepar(kcomp, ksol, imini, Nnat, rk, logsk, rhosv, rhob, 
      $ frombg,frbcbg,catot, catote, relh, frac, frabc, fraq, alpha)
 
-c     drydist calculates dry background mode size distribution, dndlrk0,  
-c     and dry aerosol contribution to mass concentration, Ctot0 (ug/m^3). 
+c     Calculate dry background mode size distribution, dndlrk0, and 
+c     dry aerosol contribution to mass concentration, Ctot0 (ug/m^3):
       call drydist(kcomp, Nnat, imini, imax, d, r, rk,  
      $ logsk, logs0, rhob, bcint, pi, dndlrk0, ntot, Ctot0)
 
       Ctotnull=Ctot0
 
 c     Diffusion and coagulation coeffecients for the respective background
-c     mode are then calculated. We here assume that all n/Aitken-modes that 
-c     coagulate on a mineral or sea-salt background all are monodisperse.
+c     mode are then calculated. We here assume that the n/Aitken-modes which 
+c     coagulate on a background mode are all monodisperse.
 c
-c     Diffusion coefficients Dm for H2SO4
+c     Diffusion coefficients Dm for H2SO4:
       call condsub (r, imax, diff, mfv, th, alpha, Dm)     
       call condsub (rp, imax, diff, mfv, th, alpha, Dmp)     
-c     Diffusion coefficients Dm for SOA
+c     Diffusion coefficients Dm for SOA:
       call condsub (r, imax, diffsoa, mfvsoa, thsoa, alpha, Dmsoa)     
       call condsub (rp, imax, diffsoa, mfvsoa, thsoa, alpha, Dmpsoa)     
-c     Coagulation coefficients K12 for H2SO4
+c     Coagulation coefficients K12 for H2SO4:
       call coagsub (r, imax, rcoag_so4n, rhob, rhosv, K12so4)   
       call coagsub (rp, imax, rcoag_so4n, rhob, rhosv, Kp12so4)   
-c     Coagulation coefficients K12 for BC
+c     Coagulation coefficients K12 for BC:
       call coagsub (r, imax, rcoag_bcn, rhob, rhobc, K12)   
       call coagsub (rp, imax, rcoag_bcn, rhob, rhobc, Kp12)   
-c     Coagulation coefficients K12 for OC
+c     Coagulation coefficients K12 for OC:
       call coagsub (r, imax, rcoag_ocn, rhob, rhooc, K12oc)   
       call coagsub (rp, imax, rcoag_ocn, rhob, rhooc, Kp12oc)   
 
 c     Wavelength dependent complex rafractive indices (cref) 
-c     are found from tabulated values for each aerosol component.
+c     are found from tabulated values for each aerosol component:
       call tabrefind (kcomp, ib, xlam, cref)
 
-c     Aerosol hygroscopicities for max rh in the look-up tables (LUT),
+c     Aerosol hygroscopicities for max RH in the look-up tables (LUT),
 c     for use as info in the header of each LUT:
       rh=relh(10)
       call hygro (rh, xbc, xdst, xoc, xs, xa, xss,
      $                      rhda, rhca, rhdss, rhcss)
 
-c     Open output files for use in CAM-Oslo 
-      call openfiles(kcomp,iopt,ib)
+c     Open output files for use in CAM-Oslo: 
+      call openfiles(kcomp,iopt,ib,extradiag)
 
-c     Adding header info for all look-up tables for each kcomp (only kcomp*.out yet):
+c     Add header info for all look-up tables for each kcomp:
       call tableinfo (kcomp, xbc, xdst, xoc, xs, xa, xss, relh, 
      $ frombg, frbcbg, catote, catot, frac, frabc, fraq, ib, ibcam, 
      $ itilp)
 
 
 c          Editable input values    ! Full range for look-up tables
+c               relh is RH given as a fraction
                 irelh1 = 1          ! 1 - 10   Note:
                 irelh2 = 10         ! 1 - 10   no loop if iopt=0
 
+c               fombg is mass fractions of OM in the background 
                 ifombg1 = 1         ! 1 - 6    Note:
                 ifombg2 = 6         ! 1 - 6    loop only for kcomp=1
 
+c               fbcbg is mass fractions of BC in the background 
                 ifbcbg1 = 1         ! 1 - 6    Note:
                 ifbcbg2 = 6         ! 1 - 6    loop only for kcomp=4
 
+c               ctot is added mass to be internally mixed with the
+c               background modes for kcomp=5-10
                 ictot1 = 1          ! 1 - 6    Note: loop over       
                 ictot2 = 6          ! 1 - 6    ictot OR ictote
 
+c               ctote is added mass to be internally mixed with the
+c               background modes for kcomp=1-4
                 ictote1 = 1         ! 1 - 16   Note: loop over ictot      
                 ictote2 = 16        ! 1 - 16   OR ictote, not both
 
+c               fac is added OM+BC to total mass fractiom to be internally mixed
+c               with the background modes for kcomp=1-10                
                 ifac1 = 1           ! 1 - 6    Note:
                 ifac2 = 6           ! 1 - 6    no loop if kcomp=0
 
+c               fbc is added BC to OM&BC mass fractiom to be internally mixed
+c               with the background modes for kcomp=5-10                
                 ifbc1 = 1           ! 1 - 6    Note:
                 ifbc2 = 6           ! 1 - 6    no loop if kcomp=0-4
 
+c               faq is added wet-phase to total SO4 mass fractiom to be internally mixed
+c               with the background modes for kcomp=1-10                
                 ifaq1 = 1           ! 1 - 6    Note:
                 ifaq2 = 6           ! 1 - 6    no loop if kcomp=0-3
 
-c          Do not edit the following input values!!! 
-                if(iopt.eq.0) then  ! no RH loop
+c               Do not edit the following (default) input values! (it's safer to edit the do loops)
+                if(iopt.eq.0) then  ! no RH loop, w e only need the new dry aerosol sizes
                  irelh1 = 1
                  irelh2 = 1
                 endif
@@ -298,7 +287,7 @@ c          Do not edit the following input values!!!
                  ifbcbg1 = 1
                  ifbcbg2 = 1
                 endif
-                if(kcomp.eq.0) then
+                if(kcomp.eq.0) then  ! no internal mixing here
                  ifac1  = 1
                  ifac2  = 1
                  ifbc1  = 1
@@ -309,7 +298,7 @@ c          Do not edit the following input values!!!
                  ictote2= 1
                  ictot1 = 1   
                  ictot2 = 1
-                elseif(kcomp.ge.1.and.kcomp.le.3) then
+                elseif(kcomp.ge.1.and.kcomp.le.3) then  ! no BC coagulation or cloud processing here 
                  ifbc1  = 1
                  ifbc2  = 1
                  ifaq1  = 1
@@ -325,22 +314,23 @@ c          Do not edit the following input values!!!
                  ictote1= 1   
                  ictote2= 1 
                 endif  ! kcomp
-                if(itilp.eq.1) then      ! no fombg or fbcbg dependency for itilp=1
+                if(itilp.eq.1) then      ! there is no fombg or fbcbg (size) dependency for itilp=1
                  ifombg1 = 1
                  ifombg2 = 1
                  ifbcbg1 = 1
                  ifbcbg2 = 1
                 endif
 
-
+c             Loop over RH and all process-specific indices. For manual changes below,
+c             note that not all combinations are allowed (or taken into account, see above)                 
+                
+                
                do 540 irelh = irelh1, irelh2
 c              do 540 irelh = 1,1
 
 c              relative humidity:
                rh=relh(irelh)
-               if(iopt.eq.0) then
-                 rh=0.05
-                endif
+               
 cX              extra test loop for hygroscopic growth plots (with e.g. irelh=1,1 in the loop above)
 c                do 540 irh=1,99,2
 c                rh=0.01*real(irh)
@@ -349,31 +339,62 @@ c                do 540 irh=1,199
 c                rh=0.005*real(irh)
 cX
 
-c               Aerosol hygroscopicities (RH dependent) 
-c               and points of deliquescence & crystallisation 
+c               calculate/define aerosol hygroscopicities (RH dependent) 
+c               and points of deliquescence & crystallisation: 
                 call hygro (rh, xbc, xdst, xoc, xs, xa, xss,
      $                      rhda, rhca, rhdss, rhcss)
 
               do 540 ifombg = ifombg1, ifombg2
 c              do 540 ifombg = 1,1
+               if(ifombg.gt.1.and.kcomp.ne.1) then
+                 write(*,*) "Error: ifombg > 1 only for kcomp=1"  
+                 stop   
+               endif
 
               do 540 ifbcbg = ifbcbg1, ifbcbg2
-c              do 540 ifbcbg = 6,6
+c              do 540 ifbcbg = 1,1
+               if(ifbcbg.gt.1.and.kcomp.ne.4) then
+                 write(*,*) "Error: ifbcbg > 1 only for kcomp=4"  
+                 stop   
+               endif
 
-             do 540 ictot  = ictot1, ictot2
+                 
+            do 540 ictot  = ictot1, ictot2
+c            do 540 ictot = 1,1
             do 540 ictote = ictote1, ictote2
-c            do 540 ictot = 6,6
-c            do 540 ictote = 16,16
-
+c           do 540 ictote = 1,1
+             if(ictote.gt.1.and.(kcomp.eq.0.or.kcomp.gt.4)) then
+               write(*,*) "Error: ictote > 1 only for kcomp=1-4"  
+               stop   
+             endif
+             if(ictot.gt.1.and.(kcomp.le.4)) then
+               write(*,*) "Error: ictot > 1 only for kcomp>4"  
+               stop   
+             endif
+               
           do 540 ifac = ifac1, ifac2
-c          do 540 ifac = 6,6
+c          do 540 ifac = 1,1
+           if(ictot.gt.1.and.(kcomp.le.4)) then
+             write(*,*) "Error: ifac > 1 only for kcomp>4"  
+             stop   
+           endif
 
+             
         do 540 ifbc = ifbc1, ifbc2
 c        do 540 ifbc = 1,1
+         if(ictot.gt.1.and.(kcomp.le.4)) then
+           write(*,*) "Error: ifbc > 1 only for kcomp>4"  
+           stop   
+         endif
 
       do 540 ifaq = ifaq1, ifaq2
 c      do 540 ifaq = 1,1
+        if(ictot.gt.1.and.(kcomp.le.3)) then
+          write(*,*) "Error: ifaq > 1 only for kcomp>3"  
+          stop   
+        endif
 
+c     Run-log output to screen and log-file        
       if(kcomp.eq.1) then
        write(*,*) 'kcomp,irelh,ifombg,ictote,ifac=',
      $ kcomp,irelh,ifombg,ictote,ifac
@@ -403,7 +424,7 @@ cX
 
 c     Basic input parameters to the table calculations:
 
-c     concentrations (ug/m^3, per background particle/cm^3) of internally mixed 
+c     Concentrations (ug/m^3, per background particle/cm^3) of internally mixed 
 c     SO4, BC and OC. Cas1, Cas2, Cas3 and Caso4 is internally mixed SO4 from 
 c     condensation (H2SO4), coagulation (H2SO4), cloud processing ((NH4)2SO4) 
 c     and all of the above, respectively. Cabc and Caoc is all internally mixed 
@@ -440,50 +461,48 @@ c     BC and OC (from coagulation), respectively.
         if(Cas2.lt.1.e-40) Cas2=1.e-40
         if(Cas3.lt.1.e-40) Cas3=1.e-40
 
-      Caso4=Cas1+Cas2+Cas3
-      faq=fraq(ifaq)                            !  wet-phase mass fraction of added sulfate (H2SO4 or (NH4)2SO4)
+      Caso4=Cas1+Cas2+Cas3                      !  Total added sulfate mass (H2SO4 and (NH4)2SO4)
+      faq=fraq(ifaq)                            !  Wet-phase mass fraction (as (NH4)2SO4) of added sulfate 
       fac=frac(ifac)                            !  Carbonaceous mass fraction of total added mass
-      fabc=frabc(ifbc)                          !  BC mass fraction of added Carbonaceous mass
-      fombg=frombg(ifombg)
-c     fombg is the OM (as SOA) mass fraction in the background SO4&SOA(Ait) mode.  
-c     The respective volume fraction of OM in background is then:
-      vombg=1.0/(1.0+(1.0-fombg)/(fombg*rhosv/rhooc+eps))
-      fbcbg=frbcbg(ifbcbg)
-c     fbcbg is the BC mass fraction in the background OC&BC(Ait) mode.  
-c     The respective volume fraction of BC in background is then:
-      vbcbg=1.0/(1.0+(1.0-fbcbg)/(fbcbg*rhooc/rhobc+eps))
+      fabc=frabc(ifbc)                          !  BC mass fraction of added carbonaceous mass
+      fombg=frombg(ifombg)                      !  OM mass fraction in the background (SOA and H2SO4) for kcomp=1
+      vombg=1.0/(1.0+(1.0-fombg)/(fombg*rhosv/rhooc+eps)) !  OM volume fraction in background for kcomp=1
+      fbcbg=frbcbg(ifbcbg)                      !  BC mass fraction in the background (OC and BC) for kcomp=4  
+      vbcbg=1.0/(1.0+(1.0-fbcbg)/(fbcbg*rhooc/rhobc+eps)) ! BC volume fraction in the background for kcomp=4 
 
       if(kcomp.ge.1.and.kcomp.le.10) then
-c       contribution to Ctot from the background mode
+c       contribution to total mass conentration (Ctot) from the background mode:
        if(kcomp.eq.1) then
         Ctot0=Ctotnull*(1.0+vombg*(rhooc/rhob-1.0)) ! -> Ctotnull*0.815 for ren OM (vombg=fombg=1).
        elseif(kcomp.eq.4) then
         Ctot0=Ctotnull*(1.0+vbcbg*(rhobc/rhob-1.0)) ! -> Ctotnull*1.2 for ren BC (vbcbg=fbcbg=1).
        endif
-c        write(*,*) 'Ctotnull =', Ctot0
+c      Output to the run-log file
         write(999,*) 'background contribution:'
         write(999,*) Ctot0
 c       contribution to Ctot from internally mixed (non-background) H2SO4 and (NH4)2SO4
 c       (note: only H2SO4 for kcomp=1 since ifaq=1 there)
         dCtot=Caso4 
         Ctot=Ctot0+dCtot
-        write(999,*) 'sulfate contribution (a, tot):'
+        write(999,*) 'sulfate contribution and acc. total (a, tot):'
         write(999,*) dCtot, Ctot
 c       contribution to Ctot from internally mixed (non-background) BC
         dCtot=Cabc
         Ctot=Ctot+dCtot
-        write(999,*) 'bc contribution (a, tot):'
+        write(999,*) 'BC contribution and accumulated total (a, tot):'
         write(999,*) dCtot, Ctot
 c       contribution to Ctot from internally mixed (non-background) OC
         dCtot=Caoc
         Ctot=Ctot+dCtot
-        write(999,*) 'oc contribution (a, tot):'
+        write(999,*) 'OC contribution and accumulated total (a, tot):'
         write(999,*) dCtot, Ctot
       else
         Ctot=Ctot0
       endif
-      write(*,*) 'dry Ctot =', Ctot
-
+      Cdry=Ctot
+      write(*,*) 'dry Ctot =', Cdry
+c
+      
       if(kcomp.ge.1.and.kcomp.le.4) then
         cat=catote(ictote)
       else
@@ -491,8 +510,17 @@ c       contribution to Ctot from internally mixed (non-background) OC
       endif
 
 c     Calculate modified dry size distributions for process specific 
-c     SO4 and BC (and OC) internally mixed with the background aerosol
-ccccc6ccc1ccccccccc2ccccccccc3ccccccccc4ccccccccc5ccccccccc6ccccccccc7cc
+c     SO4 and BC (and OC) internally mixed with the background aerosol:
+       if(light) then
+      call conteqlight (r, rbcn, d, imax, rhos, rhobc, rhooc,
+     $ rhob, rhosv, Nnatk, fcondk, fcoagk, faqk,
+     $ Cas1, Cas2, Cas3, Cabc, Caoc, Ctot0, dndlrk0, dndlrkny, ntot, 
+     $ vbci, voci, vsi, vai, cintbg, cintsc, cintsa, cintbc, 
+     $ cintoc, cintbg05, cintsc05, cintsa05, cintbc05, cintoc05, 
+     $ cintbg125, cintsc125, cintsa125, cintbc125, cintoc125,
+     $ aaero, aaeros, vaero, vaeros, fracdim, kcomp, vombg, vbcbg,
+     $ rk, rkny, logsk, extradiag) 
+       else
       call conteq (r, rp, rbcn, d, itot, imax, ictot, ictote, ifaq, 
      $ imini, rhos, rhobc, rhooc, rhob, rhosv, rhoc2,
      $ Nnatk, fcondk, fcoagk, faqk, Cas1, Cas2, Cas3, Cabc, Caoc, Ctot0,
@@ -501,32 +529,38 @@ ccccc6ccc1ccccccccc2ccccccccc3ccccccccc4ccccccccc5ccccccccc6ccccccccc7cc
      $ cintbg, cintsc, cintsa, cintbc, cintoc, cintbg05, cintsc05, 
      $ cintsa05, cintbc05, cintoc05, cintbg125, cintsc125, cintsa125, 
      $ cintbc125, cintoc125, aaero, aaeros, vaero, vaeros, fracdim, 
-     $ kcomp, vombg, vbcbg, fac)
-
+     $ kcomp, vombg, vbcbg, fac, extradiag)
+       endif
+      
 c     Hygroscopic growth is taken into account in subroutine rhsub,
-c     for the given relative humidity (if itilp=0, i.e. iopt=1)
-      Cdry=Ctot
+c     for the given relative humidity (if itilp=0, i.e. iopt=1):
       if(ksol.eq.1.and.itilp.eq.0) then
-        call rhsub (imax, rh, d, r, rp, dndlrkny, vsi, vbci, voci, 
+       if(light) then
+          call rhsublight(imax, rh, d, r, dndlrkny, vsi, vbci, voci, 
+     $   vombg, vbcbg, vssol, vbcsol, vocsol, vasol, vw, fki, itot,
+     $   rhow, Ctot, kcomp, faq, iopt, xbc, xdst, xoc, xs, xa, xss,
+     $   rhda, rhca, rhdss, rhcss, rkny, rknywet, logsk, Nnatk,
+     $   extradiag)
+       else
+          call rhsub (imax, rh, d, r, rp, dndlrkny, vsi, vbci, voci, 
      $   fombg, fbcbg, vombg, vbcbg, vssol, vbcsol, vocsol, vasol, 
      $   vw, fki, itot, rhos, rhosv, rhobc, rhooc, rhob, rhow, Ctot, 
-     $   kcomp, ismolarh, cat, fac, fabc, faq, iopt,
-     $   xbc, xdst, xoc, xs, xa, xss, rhda, rhca, rhdss, rhcss)
-      endif
+     $   kcomp, ismolarh, cat, fac, fabc, faq, iopt, xbc, xdst, xoc,
+     $   xs, xa, xss, rhda, rhca, rhdss, rhcss, extradiag)
+        endif  
+       endif
 
-c     Tabulate aerosol size distribution after hygroscopic growth, 
-c     and check how well total aerosol number is conserved
+c     Tabulate aerosol size distributions after ageing and hygroscopic
+c     growth, and check how well the total aerosol number is conserved,
+c     i.e. how close numb is to 1:
       numb=0.0
       if(itot.eq.0) then
         do i=1,imax
           dndlrk(i)=dndlrkny(i)
           numb=numb+dndlrk(i)*d
-ct
-c          write(12,100) r(i), dndlrk(i) 
-c          write(14,100) r(i), dndlrk(i)*(4.0*pi/3.0)*r(i)**3
-ct
-          if(iopt.eq.1)
-     $     write(9001,400) r(i), dndlrk(i), rh, kcomp 
+          if(extradiag)
+     $      write(9001,500) r(i), dndlrkny(i),  
+     $      cat, fac, fabc, faq, rh, kcomp
         enddo
       else
         do i=1,imax
@@ -535,45 +569,43 @@ ct
             stop
           endif
           numb=numb+dndlrkny(i)*d
-c         write(12,100) r(i), dndlrk0(i) 
-c         write(13,100) r(i), dndlrkny(i)
-c         write(14,100) r(i), dndlrkny(i)*(4.0*pi/3.0)*r(i)**3
-          if(ib.ne.19) then
-           write(9001,500) r(i), dndlrkny(i),  
-     $      cat, fac, fabc, faq, rh, kcomp
+          if(extradiag) then
+c          Additional output (for testing purposes only)
+           write(12,100) r(i), dndlrk0(i) 
+           write(13,100) r(i), dndlrkny(i)
+           write(14,100) r(i), dndlrkny(i)*(4.0*pi/3.0)*r(i)**3
           endif
+           if(extradiag)
+     $      write(9001,500) r(i), dndlrkny(i),  
+     $      cat, fac, fabc, faq, rh, kcomp
         enddo
         if(itilp.eq.1) then
-         call modetilp(pi, imax, d, r, dndlrkny, dndlrk0,
+c        Make look-up tables for (fitted) lognormal mode parameters 
+         if(light) then
+          call modetilplight(cat, fac, fabc, faq, kcomp, rkny, logsk)
+         else
+          call modetilp(pi, imax, d, r, dndlrkny, dndlrk0,
      $     cat, fac, fabc, faq, kcomp)
         endif
+       endif
+       write(*,*) 'Wet ntot integrated =', numb
+       write(999,*) 'Wet ntot integrated =', numb
       endif
-c      write(*,*) 'numbny=', numb
 
 c     Sizemie determines the spectral aerosol gross (size integrated) 
 c     optical parameters (by calling the Mie code for each particle size), 
-c     and writes the result to file.
+c     and writes the result to the look-up table files:
       if(iopt.eq.1) then 
       call sizemie(imini, imaxi, r, rbcn, d, vsi, vbci, voci, vai,
      $  vombg, fombg, vbcbg, fbcbg,                                          
      $  dndlrk, dndlrkny, kcomp, itot, ib, vssol, vbcsol, vocsol, vasol, 
      $  vw, fki, rh, Ctot, Nnat, cat, fac, fabc, faq, fracdim, xlam, 
-     $  xlami, xlamb, xlame, fband, fb, cref, omega, gass, bext, kext)
+     $  xlami, xlamb, xlame, fband, fb, cref, omega, gass, bext, kext,
+     $  Cdry, extradiag)
       endif
 
       if(iopt.eq.1) then
-c        write(*,*) 'rh, Caso4, Cas1, Cas3, Cabc'
-c        write(*,300) rh, Caso4, Cas1, Cas3, Cabc
-c        write(*,*)
-c        write(*,*) 'irelh, ictot, ifbc, ifaq'
-c        write(*,*) irelh, ictot, ifbc, ifaq
-c        write(1160+kcomp,*) rh, omega(9)
-c        write(1170+kcomp,*) rh, gass(9)
-c        write(1180+kcomp,*) rh, bext(9)
-c        write(1190+kcomp,*) rh, kext(9)
-c
 c      Here comes the aerodryk*.out look-up tables:
-c
       if(ib.eq.31.and.irelh.eq.1) then
        aaerol=aaero-aaeros                              
        vaerol=vaero-vaeros
@@ -605,7 +637,7 @@ c
        endif ! itot
       endif ! ib & relh
 
-!     Very rough control (-> table entry format will be wrong):       
+!     A rough check:       
       if(cintbg.ge.1.e100.or.cintoc.ge.1.e100.or.cintsa.ge.1.e100) then
         write(*,*) 'cintbg or cintoc or cintsa too large for format,' 
         stop
@@ -613,20 +645,35 @@ c
 
       endif  ! iopt
 
- 540  continue         ! ifaq, ifbc, ifac, ictot/ictote, ifombg, ifbcbg, irelh
-
-      close(9000) 
-      close(9001)
-      close(9002) 
-      close(9003) 
-      close(9600) 
+ 540  continue  ! ifaq, ifbc, ifac, ictot/ictote, ifombg, ifbcbg, irelh
 
       enddo  ! kcomp
      
+      do ifile=12,14
+        close(ifile) 
+      enddo   
+      do ifile=40,44
+        close(ifile) 
+      enddo
+      do ifile=60,64
+        close(ifile) 
+      enddo
+      do ifile=132,136
+        close(ifile) 
+      enddo
+      close(999) 
+      do ifile=9000,9003
+        close(ifile) 
+      enddo
+      close(9600) 
+
+      call system('mkdir LUT-output')
+      call system('mv *.out LUT-output/')
+      call system('mkdir Extra-output')
+      call system('mv *.dat Extra-output/')
+
 
  100  format(2(x,e10.4))
- 300  format(x,f9.3,5(x,e9.3))
- 400  format(2(x,e12.5),f7.2,I3)
  500  format(6(x,e12.5),f7.2,I3)
  2000 format(I2,21e10.3)
  2100 format(I2,22e10.3)

@@ -2,8 +2,8 @@
 module commondefinitions
 
 !---------------------------------------------------------------------------------
-! Module for aerosol hygroscopicities and dry size parameters (and soon also
-! mass densities) which are common in AeroTab and CAM5-Oslo
+! Module for aerosol hygroscopicities, mass densities and dry size parameters 
+! which are common in AeroTab and CAM5-Oslo.
 !---------------------------------------------------------------------------------
 
   use shr_kind_mod, only: r8 => shr_kind_r8
@@ -44,39 +44,30 @@ module commondefinitions
    character(len=8),public,  dimension(N_AEROSOL_TYPES)  :: aerosol_type_name = &
                                  (/"SULFATE ", "BC      ","OM      ", "DUST    ", "SALT    " /)
    real(r8), public, dimension(N_AEROSOL_TYPES)  :: aerosol_type_density =               &
-!cbc                                 (/1769.0_r8, 2000.0_r8,  1500.0_r8, 2600.0_r8,  2200.0_r8 /)  !kg/m3
                                  (/1769.0_r8, 1800.0_r8,  1500.0_r8, 2600.0_r8,  2200.0_r8 /)  !kg/m3
    real(r8), public, dimension(N_AEROSOL_TYPES)  :: aerosol_type_molecular_weight =      &
-!csoa                                 (/132.0_r8,  12.0_r8,    144.0_r8,  135.0_r8,   58.44_r8  /)  !kg/kmol
                                  (/132.0_r8,  12.0_r8,    168.2_r8,  135.0_r8,   58.44_r8  /)  !kg/kmol
    real(r8), public, dimension(N_AEROSOL_TYPES)  :: aerosol_type_osmotic_coefficient =   &
-!cbc                                 (/0.7_r8,    1.0_r8,     1.0_r8,    1.0_r8,     1.0_r8    /)  ![-]
                                  (/0.7_r8,    1.111_r8,     1.0_r8,    1.0_r8,     1.0_r8    /)  ![-]
    real(r8), public, dimension(N_AEROSOL_TYPES)  :: aerosol_type_soluble_mass_fraction = & 
-!csoa                                 (/1.0_r8,    1.67e-7_r8, 0.747_r8,  0.1_r8,     0.885_r8  /)  ![-]
                                  (/1.0_r8,    1.67e-7_r8, 0.8725_r8, 0.1_r8,     0.885_r8  /)  ![-]
    real(r8), public, dimension(N_AEROSOL_TYPES)  :: aerosol_type_number_of_ions =        &
                                  (/3.0_r8,    1.0_r8,     1.0_r8,    2.0_r8,     2.0_r8    /)  ![-]
 
-!  Define lognormal size parameters for each size mode (dry, at point of emission/production) 
+!  Define lognormal size parameters for each size mode (dry, at point of emission/production): 
    integer, public, parameter :: nmodes  = 14
    integer, public, parameter :: nbmodes = 10 
    !Number median radius of background emissions THESE DO NOT ASSUME IMPLICIT GROWTH!! 
    real(r8), parameter, public, dimension(0:nmodes) :: originalNumberMedianRadius =   &
-!cBC_AX                      1.e-6_r8* (/ 0.1_r8,                                            &   !0
                       1.e-6_r8* (/ 0.0626_r8,                                            &   !0
-!cr2                                   0.0118_r8, 0.0118_r8, 0.04_r8,  0.04_r8, 0.075_r8, &   !1-5
                                    0.0118_r8, 0.024_r8, 0.04_r8,  0.04_r8, 0.075_r8, &   !1-5
-!cSS                                   0.22_r8,   0.63_r8,   0.022_r8, 0.13_r8, 0.74_r8,  &   !6-10
                                    0.22_r8,   0.63_r8,   0.0475_r8, 0.30_r8, 0.75_r8, &   !6-10    ! Salter SS
-!cr12                                   0.0118_r8, 0.0118_r8, 0.04_r8,  0.04_r8    /)          !11-14
                                    0.0118_r8, 0.024_r8, 0.04_r8,  0.04_r8    /)          !11-14
 
-   !sigma of background aerosols )
+   !Standard deviation sigma of background size distributions
    real(r8), parameter, public, dimension(0:nmodes) :: originalSigma =        &
                                  (/1.6_r8,                                    &   !0
                                    1.8_r8, 1.8_r8, 1.8_r8, 1.8_r8, 1.59_r8,   &   !1-5
-!cSS                                   1.59_r8, 2.0_r8, 1.59_r8, 1.59_r8, 2.0_r8, &   !6-10  
                                    1.59_r8, 2.0_r8, 2.1_r8, 1.72_r8, 1.60_r8, &   !6-10   ! Salter SS
                                    1.8_r8, 1.8_r8, 1.8_r8, 1.8_r8  /)             !11-14
 

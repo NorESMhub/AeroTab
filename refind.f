@@ -80,6 +80,8 @@ c     $       + vasol(i)*(1.0-vbcbg)*cref(5,iband)
 c     $       + vasol(i)*vbcbg*cref(3,iband)
 c     $       + vw(i)*cref(4,iband))                            
 c     $       /(vssol(i)+vocsol(i)+vasol(i)+vw(i))
+c       or alternatively (giving the same answer):
+c        crin=vasol(i)*vbcbg*crina+(1.0-vasol(i)*vbcbg)*crin0
 c       endif
 ctest
 c        if(lambda.eq.0.5) then

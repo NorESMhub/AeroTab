@@ -23,8 +23,9 @@ c     version, since there is now in general more added mass per background part
 c     The cat and cate arrays have also been changed so that their values (for varying
 c     icat and icate) can be calculated based on the min and max array values...
 
-c     October 201: recalibrated cate for kcomp=2 due to ca. doubling in background size
-
+c     October 2016: recalibrated cate for kcomp=2 due to ca. doubling in background size
+c     (old values are commented as "co").
+      
       use commondefinitions
 
       implicit none
@@ -97,8 +98,8 @@ c        write(*,*) 'assuming OC is the basis for added BC and SO4'
         ksol=1
         rhob=aerosol_type_density(3)
         imini=1   
-co        catote=(/ 1e-10, 0.01, 0.05, 0.1, 0.2, 0.4, 0.7, 1.0,  ! std
-co     $   1.5, 2.5, 5., 10., 25., 50., 100., 500. /)*1.904e-3   ! std
+co        catote=(/ 1e-10, 0.01, 0.05, 0.1, 0.2, 0.4, 0.7, 1.0,
+co     $   1.5, 2.5, 5., 10., 25., 50., 100., 500. /)*1.904e-3 
         do icat=2,16
            catote(icat)=10**((icat-1)/3.0-4.301)
         enddo
@@ -130,7 +131,6 @@ c        write(*,*) '  MINCOA, from AEROCOM'
         imini=20   
 co        catot=(/ 1.e-10, 0.02, 0.1, 0.5, 2.0, 8.0 /)
         do icat=2,6
-c           catot(icat)=10**((icat-1)/1.0-2.921)    ! ble litt for stort -> ustabilt...
            catot(icat)=10**((icat-1)/1.0-3.699)
         enddo
       elseif(kcomp.eq.8) then    
@@ -162,12 +162,8 @@ c        write(*,*) '  SSCOA, from AEROCOM'
         imini=20
 co        catot=(/ 1.e-10, 0.02, 0.1, 0.5, 2.0, 8.0 /)
         do icat=2,6
-ct           catot(icat)=2*10**((icat-1)/1.0-3.0)
-c           catot(icat)=10**((icat-1)/1.0-3.0)    ! ble litt for stort -> ustabilt...
            catot(icat)=10**((icat-1)/1.0-3.699)
         enddo
-c     kcomp = 11, 12 and 14 are not used in CAM4-Oslo, just used for 
-c     testing against kcomp = 1, 2 and 3 without condensate 
       elseif(kcomp.eq.0) then
 c        write(*,*) '  soot (BC), fractal a-mode'
         alpha=0.3
@@ -181,7 +177,7 @@ c        write(*,*) '  soot (BC), fractal a-mode'
         stop
       endif
 
-c     define grid for tabulated optical parameters and CCN:
+c     define input arrays for tabulated optical parameters:
 c     relative humidity, RH
       relh =(/ 0.0, 0.37, 0.47, 0.65, 0.75, 0.80, 
      $                    0.85, 0.90, 0.95, 0.995 /)

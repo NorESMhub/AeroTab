@@ -9,7 +9,7 @@ MAIN = AeroTab
 MAKDEP= ./makdep
 MY_OBJ_DIR=./obj
 #List of directories in which to search for source files
-MDL_PTH:=. ../../src/chemistry/oslo_aero 
+#MDL_PTH:=. ../../src/chemistry/oslo_aero 
 ####################################################
 #Normally don't touch anything below this line 
 #(except to add or remove a source file)
@@ -64,6 +64,7 @@ SRC_LST := shr_kind_mod.F90\
    modepar.f\
    drydist.f\
    conteq.f\
+   conteqlight.f\
    sizemie.f\
    chandrav.f\
    tabrefind.f\
@@ -72,10 +73,12 @@ SRC_LST := shr_kind_mod.F90\
    coagsub.f\
    condsub.f\
    rhsub.f\
+   rhsublight.f\
    koehler.f\
    mixsub.f\
    smolar.f\
-   modetilp.f
+   modetilp.f\
+   modetilplight.f
 
 # Prepend -I to use for compiler argument 
 #include directories to search for #included files

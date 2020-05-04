@@ -6,31 +6,15 @@
      $ ismolar, vbci, voci, vsi, vai, cintbg, cintsc, cintsa, cintbc, 
      $ cintoc, cintbg05, cintsc05, cintsa05, cintbc05, cintoc05, 
      $ cintbg125, cintsc125, cintsa125, cintbc125, cintoc125, aaero, 
-     $ aaeros, vaero, vaeros, fracdim, kcomp, vombg, vbcbg, fac) 
+     $ aaeros, vaero, vaeros, fracdim, kcomp, vombg, vbcbg, fac,
+     $ extradiag) 
 
 c **********************************************************************************
 c     Created by Alf Kirkevåg.
 c **********************************************************************************
 
-c     Here the modified dry size distributions for process specific 
-c     SO4, BC and OC internally mixed with the background aerosol is 
-c     calculated. 
-c     NOTE: For kcomp=4 (the OC&BC(Ait) mode) we assume that the
-c     background mode consists of OC, and add BC homogeneously wrt.
-c     radius (except at very small radii due to small OC amounts due
-c     to a frac a little <1), if no so4 from condensation is added.
-c     Therefore we assume that dvbc=0 in calculating modified size
-c     distributions, but take the homogeneously internally mixed BC
-c     into account afterwards, by using an adjusted cbc(i) wrt. the
-c     volume fractions vbci etc. (for use in rhsub and sizemie) as 
-c     well as by remembering to multiply the normalized N4 numbers 
-c     by a constant when the tables are to be used in CAM-Oslo.  
-c
-c     New treatment for kcomp=4: fac is now mass fraction of added OC
-c     (as SOA), as for the other modes, while instead fbcbg is the mass 
-c     fraction of BC in the background OC&BC(Ait) mode. Similarly, fombg 
-c     is the mass fraction of OM in the background SO4&SOA(ait) mode. 
-c 
+c     Here the modified dry size distributions for process specific SO4, BC and OC
+c     internally mixed with the background aerosol are calculated. 
 ccccc6ccc1ccccccccc2ccccccccc3ccccccccc4ccccccccc5ccccccccc6ccccccccc7cc
 
       implicit none
@@ -61,7 +45,8 @@ ccccc6ccc1ccccccccc2ccccccccc3ccccccccc4ccccccccc5ccccccccc6ccccccccc7cc
      $ cintbc125, cintoc125, dcintbg, vtot, aaero, aaeros, vaero, 
      $ vaeros, pi, e, p1, p2, fac
       REAL NrDsoa, dvsoa, dvconsoa, vombg, vbcbg, rhobg
-
+      LOGICAL extradiag
+      
 c     Critical radius for cloud processing, rc, ranging between rcmin and 
 c     rcmax (and smoothed over this range), from Chuang and Penner (1995). 
 c     We have assumed that this range is independent of background aerosol 
@@ -72,18 +57,8 @@ c     We have assumed that this range is independent of background aerosol
       Caso4=Cas1+Cas2+Cas3        ! total mass conc. of H2SO4 and (NH4)2SO4
       frcoag=Cas2/Caso4           ! (H2SO4 coagulate)/Caso4 
       fr=Cas3/Caso4               ! (wet-phase (NH4)2SO4)/Caso4
-c      write(*,*) 'Cas1,2,3=', Cas1, Cas2, Cas3
-c      write(*,*) 'fr, frcoag=', fr, frcoag
 
-c     Initial guess of jmax, the maximum required iterations to satisfy
-c     the stability criterion for the continuity equation. 
-      jmaxx=10000 
-
-c     Initiate modified size distribution calculations. Estimate
-c     amount of "moves to the right" (ix) so that jmax < jmaxx,
-c     and search for a sufficiently large total iteration number, 
-c     jmax, to satisfy the stability criterium.
-
+c     Some array initializations:      
       do i=0,imax
          K12(i)    = K12in(i)
          Kp12(i)   = Kp12in(i)
@@ -91,12 +66,13 @@ c     jmax, to satisfy the stability criterium.
          Kp12oc(i) = Kp12ocin(i)
          K12so4(i) = K12so4in(i)
          Kp12so4(i)= Kp12so4in(i)
-c       write(19,*) r(i), Dm(i)
-c       write(20,*) r(i), Dmsoa(i)
       enddo
 
-c     Initially, modified size distribution = background size distribution 
+c     Initial guess of jmax, the maximum required iterations to satisfy
+c     the stability criterion for the continuity equation:
+      jmaxx=10000 
 
+c     Initially, modified size distribution = background size distribution 
       itest=0
       incjmax=0   
  11   do i=0,imax                     
@@ -128,12 +104,6 @@ c     For SOA, add condensation --> NrDsoa (NrD is for so4 only)!
       NK12oc=0.0          ! OC (OM)
       NK12so4=0.0         ! H2SO4
       do i=0,imax
-cerr        NrD=NrD+dndlrkny(i)*Dm(i)*r(i)*d           ! unit 1.e-12 s^-1 
-cerr        NrDsoa=NrDsoa+dndlrkny(i)*Dmsoa(i)*r(i)*d  ! unit 1.e-12 s^-1
-cerr        NK12=NK12+dndlrkny(i)*K12(i)*d             ! unit 1.e-12 s^-1 
-cerr        NK12oc=NK12oc+dndlrkny(i)*K12oc(i)*d       ! unit 1.e-12 s^-1
-cerr        NK12so4=NK12so4+dndlrkny(i)*K12so4(i)*d    ! unit 1.e-12 s^-1 
-c       corrected 18/10-2016
         NrD=NrD+dndlrkny(i)*Dmp(i)*rp(i)*d           ! unit 1.e-12 s^-1 
         NrDsoa=NrDsoa+dndlrkny(i)*Dmpsoa(i)*rp(i)*d  ! unit 1.e-12 s^-1
         NK12=NK12+dndlrkny(i)*Kp12(i)*d              ! unit 1.e-12 s^-1 
@@ -162,7 +132,7 @@ c     Searching for sufficiently large total number of iterations,
 c     jmax (>10000), to satisfy the stability criterium for the 
 c     continuity equation. If incjmax=1 (last guess was too small), 
 c     jmax is doubled. Also estimate the necessary amount of 
-c     "moves to the right" (ix), to facicitate a solution.
+c     "moves to the right" (ix), to facilitate a solution.
       rjmg=0.0
       do i=ix+1,imax
 
@@ -172,20 +142,13 @@ c     "moves to the right" (ix), to facicitate a solution.
           dvcoaoc=dvoc*Kp12oc(i)/NK12oc
 
 c       dv* unit: ug/m^3/(ug/m^3/cm^-3)=cm^3
-cerr        dvcon=dvs1*r(i)*Dm(i)/NrD
-cerr        dvcos=dvs2*K12so4(i)/NK12so4
-cerr        dvcoa=dvbc*K12(i)/NK12
-cerr        dvcoaoc=dvoc*K12oc(i)/NK12oc
-cerr        dvconsoa=dvsoa*r(i)*Dmsoa(i)/NrDsoa
-c       corrected 18/10-2016
         dvcon=dvs1*rp(i)*Dmp(i)/NrD
         dvcos=dvs2*Kp12so4(i)/NK12so4
         dvcoa=dvbc*Kp12(i)/NK12
         dvcoaoc=dvoc*Kp12oc(i)/NK12oc
         dvconsoa=dvsoa*rp(i)*Dmpsoa(i)/NrDsoa
-c
         dv=dvcon+dvcoa+dvcos+dvcoaoc+dvconsoa
-c       (Possible improvement for small added volumes: use Taylor series...)
+c
         rjm=3e12*dv/(4.0*pi*r(i)**3.0*((1.0+d/log10(e))**3.0-1.0))
         rjm=rjm/(1.01-fr)
         if(rjm.gt.rjmg) then
@@ -246,7 +209,6 @@ c     (after correcting for internal mixtures in the background aerosol)...
 c     ... and initialize arrays for internally mixed 
 c     BC, H2SO4 and OC (POM or SOA) from condensation and coagulation 
 c     and (NH4)2SO4 from cloud processing
-c      do i=1,imax
       do i=0,imax
         cbc(i)=1.0e-100
         coc(i)=1.0e-100
@@ -256,7 +218,6 @@ c      do i=1,imax
 
 c     Then solve continuity equation using jmax time steps/iterations 
       do 20 j=1,jmax
-
 c
         rc=rcmin+j*(rcmax-rcmin)/jmax
 
@@ -270,8 +231,7 @@ c       Initialization of key variables for each time step
         k=0
 c       Variables for growth by condensation and coagulation
         do i=1,imax
-co          if(i.le.ix) dndlrkny(i)=1.0e-50 
-          if(i.le.ix.or.dndlrkny(i).lt.1.e-50) dndlrkny(i)=1.0e-50    ! fix
+          if(i.le.ix.or.dndlrkny(i).lt.1.e-50) dndlrkny(i)=1.0e-50  ! fix
           NrD=NrD+dndlrkny(i)*Dmp(i)*rp(i)*d           ! unit 1.e-12 s^-1   
           NrDsoa=NrDsoa+dndlrkny(i)*Dmpsoa(i)*rp(i)*d  ! unit 1.e-12 s^-1
           NK12=NK12+dndlrkny(i)*Kp12(i)*d              ! unit 1.e-12 s^-1 
@@ -302,10 +262,9 @@ c       per volume of dry air to be added (per particle) in each size bin
           dvcos=dvs2*Kp12so4(i)/NK12so4      ! as H2SO4
           dvcoa=dvbc*Kp12(i)/NK12  
           dvcoaoc=dvoc*Kp12oc(i)/NK12oc
-cerr          dvconsoa=dvsoa*r(i)*Dmsoa(i)/NrDsoa
-          dvconsoa=dvsoa*rp(i)*Dmpsoa(i)/NrDsoa   ! corrected 18/10-2016
+          dvconsoa=dvsoa*rp(i)*Dmpsoa(i)/NrDsoa
           dv=dvcon+dvaq+dvcoa+dvcos+dvcoaoc+dvconsoa
-c         Find the incement of log(r/um) at r=rp, i.e. in the center 
+c         Find the increment of log(r/um) at r=rp, i.e. in the center 
 c         of the size bin, dip
           radikand=1.0+3.0e12*dv/(4.0*pi*rp(i)**3.0)
           dip(i)=log10(e)*(radikand**(1/3.0)-1.0)
@@ -420,8 +379,7 @@ c     (thereby implicitely also above 0.5um), for AEROCOM diagnostics
         endif
       enddo  
       write(*,*) 'Nt / Ntot = :', nt / ntot
-cold      if(nt/ntot.lt.0.95.or.nt/ntot.gt.1.05) then
-c     Accept bigger number error for extreme cases, but print to log
+c     Accept bigger number conservation error for extreme cases
       if(((nt/ntot.lt.0.95.or.nt/ntot.gt.1.05).and.jmax.le.300000)
      $.or.((nt/ntot.lt.0.1.or.nt/ntot.gt.1.05).and.jmax.gt.300000)) then
         jmax=jmax*2
@@ -474,7 +432,7 @@ c     and r<0.5um and r>1.25um (for AEROCOM).
           cintsa125=cintsa125+csu3(i)*d   ! as (NH4)2SO4
         endif
       enddo
-c****************************************
+c***************** special treatment for kcomp=0 *************
       if(kcomp.eq.0) then
         do i=0,imax
           if(r(i).le.rbcn) then
@@ -496,7 +454,7 @@ c          write(30,*) r(i), rhorbc(i), fracdim(i)
           if(i.ge.32) cintbg125=cintbg125+dcintbg
         enddo
       endif
-c*****************************************
+c*************************************************************
       write(*,*) 'Cbc, Coc, Csu12, Csu3 og Cbg ='
       write(*,*) cintbc, cintoc, cintsc, cintsa, cintbg       
       write(*,*) 'Ctot integrated / Ctot in =', 
@@ -527,13 +485,14 @@ c     and background aerosol, vai. Note that vsi+vbci+voci+vai=1.
        voci(i)=vcoc(i)                    ! non-background OC
        vsi(i)=vcsu(i)                     ! non-background sulfate
       enddo
-c      do i=1,imax 
-c        write(60,*) r(i), vsi(i)
-c        write(61,*) r(i), vbci(i)
-c        write(62,*) r(i), voci(i)
-c        write(63,*) r(i), vai(i) 
-c       write(12,*), r(i), dndlrkny(i)
-c      enddo
-
+      if(extradiag) then
+       do i=1,imax 
+        write(60,*) r(i), vsi(i)
+        write(61,*) r(i), vbci(i)
+        write(62,*) r(i), voci(i)
+        write(63,*) r(i), vai(i) 
+       enddo
+      endif
+       
       return
       end  

@@ -2,14 +2,14 @@
       subroutine rhsub (imax, rh, d, r, rp, dndlrkny, vsi, vbci, voci,
      $ fombg, fbcbg, vombg, vbcbg, vssol, vbcsol, vocsol, vasol, vw, 
      $ fki, itot, rhos, rhosv, rhobc, rhooc, rhob, rhow, Ctot, kcomp, 
-     $ ismolarh, cat, fac, fabc, faq, iopt,
-     $ xbc, xdst, xoc, xs, xa, xss, rhda, rhca, rhdss, rhcss)
+     $ ismolarh, cat, fac, fabc, faq, iopt, xbc, xdst, xoc, xs, xa,
+     $ xss, rhda, rhca, rhdss, rhcss, extradiag)
 
 c **********************************************************************************
 c     Created by Alf Kirkevåg.
 c **********************************************************************************
 
-c     Hygroscopic growth is taken into account, either for the given 
+c     Hygroscopic growth is here taken into account for the given 
 c     relative humidity (if iopt=1). New number and mass concentrations 
 c     and volume fractions are calculated.
 
@@ -26,7 +26,8 @@ c     and volume fractions are calculated.
      $ vw(0:100)
       REAL vssolub(100), vbcsolub(100), vocsolub(100), vasolub(100) 
       REAL fki(-1:100), f(-1:100), fm(-1:100) 
-
+      LOGICAL extradiag
+      
       PARAMETER  (pi=3.141592654)
 
 c     Initializing local arrays
@@ -60,7 +61,7 @@ c     (Sulfate and OM) and kcomp=4 (OM and BC)
         vssol(i)=vsi(i)                      ! non-background sulfate
         vbcsol(i)=vbci(i)                    ! non-background BC
         vocsol(i)=voci(i)                    ! non-background OC
-        vasol(i)=max(1.0-vsi(i)-vbci(i)-voci(i),0.0)  ! background (sulfate, OC, BC, SS or DU, or a mixture of two if kcomp=1 or 4)
+        vasol(i)=max(1.0-vsi(i)-vbci(i)-voci(i),0.0)  ! background (sulfate, OC, BC, SS or DU, or a mixture of two if kcomp = 1 or 4)
       enddo
 
 c     subroutine koehler solves the koehler equation to find wet particle 
@@ -88,10 +89,6 @@ c        if(i.eq.30) write(90,*) rh, fki(i) ! r=0.74 (ca)    mode 10
 c        if(i.eq.43) write(90,*) rh, fki(i)
 c        if(i.eq.30) write(91,*) rh, fm(i)  ! test 4nov2014 (ikke bruk denne)
       enddo
-c      write(90,*) rh, f(10)
-c      write(94,*) rh, f(44)
-c      write(95,*) rh, fm(10)
-c      write(99,*) rh, fm(44)
       fmax=1.0
       do i=1,imax
         if(fm(i).gt.fmax) then
@@ -102,7 +99,6 @@ c      write(99,*) rh, fm(44)
 c     the total iteration number jmax must be sufficiently large to 
 c     satisfy the stability criterium for the continuity equation.
       jmax=int(log10(fmax)/d)+1
-C     Noe feil her: uten utskrift et eller annet sted, kan vi få NaN optikk...!!??  
       write(*,*) 'fmax, jmax =', fmax, jmax
       
 c     determine the increment of log(r/um) at r=rp, i.e. in the center of 
@@ -164,8 +160,7 @@ c       Smolarkiewicz-scheme with ismolar corrective steps
         enddo
         call smolar (ismolarh, imax, d, dncny, dip)  
         do i=1,imax
-co          dndlrkny(i)=max(1.e-80,dncny(i)) !test
-          dndlrkny(i)=max(1.e-50,dncny(i)) !test
+          dndlrkny(i)=max(1.e-50,dncny(i))
         enddo
       endif
 
@@ -174,19 +169,16 @@ co          dndlrkny(i)=max(1.e-80,dncny(i)) !test
 c     volume fractions for sulfate, vssol, soot, vbcsol, oc, vocsol, 
 c     background aerosol, vasol, and water, vw, after hygroscopic growth. 
 c     Here vssol+vbcsol+vocsol+vasol+vw=1.
-c      do i=1,imax      
-c        write(132,100) r(i), vssol(i)                    ! hjelper !!??
-c        write(133,100) r(i), vbcsol(i)
-c        write(134,100) r(i), vocsol(i)
-c        write(135,100) r(i), vasol(i)
-c        write(136,100) r(i), vw(i)
-c         vssol(i)=max(0.0,min(vssol(i),1.0))              ! hjelper også 
-c         vbcsol(i)=max(0.0,min(vbcsol(i),1.0))  
-c         vocsol(i)=max(0.0,min(vocsol(i),1.0))  
-c         vasol(i)=max(0.0,min(vasol(i),1.0))  
-c         vw(i)=max(0.0,min(vw(i),1.0))  
-c      enddo
-
+      if(extradiag) then
+       do i=1,imax      
+        write(132,100) r(i), vssol(i)
+        write(133,100) r(i), vbcsol(i)
+        write(134,100) r(i), vocsol(i)
+        write(135,100) r(i), vasol(i)
+        write(136,100) r(i), vw(i)
+       enddo
+      endif
+      
 c     condensed water contribution, dCtot, to the total aerosol 
 c     concentration, Ctot (ug/m**-3) 
       do i=1,imax 
@@ -194,7 +186,8 @@ c     concentration, Ctot (ug/m**-3)
      $        *(rhow*vw(i)*dndlrkny(i))*d
         Ctot=Ctot+dCtot                  
       enddo
-c      write(*,*) 'wet Ctot =', Ctot
+      write(*,*) 'Wetted Ctot =', Ctot
+      write(999,*) 'Wetted Ctot =', Ctot
  
 
  100  format(2(x,e10.4))

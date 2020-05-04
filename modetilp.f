@@ -5,40 +5,10 @@ c ******************************************************************************
 c     Created by Alf Kirkevåg.
 c **********************************************************************************
 
-c     This subroutine produces look-up tables of modal parameters for
-c     lognormal size distrubutions with best fit to the modified size
-c     distributions from the code in conteq.f.
-
-cc 3/9-2013: Even if it is optimized w.r.t. conserving aerosol volume, the 
-c     number is much better conserved (very well) than volume (not so well). 
-c     Even for no added internally mixed aerosol from condensation etc. 
-c     (ictot or icatot=1), estimated volume for adapted log-normal size 
-c     distribution is about 6% larger than the volume before lognormal 
-c     adaptation. This should be unnecessary. To begin improving the code, 
-c     allow for better resolution in the r and σ grid!
-cc 
-cc 28/7-2014: Increased resolution (dres=sres=1.e4 instead of 1.e3) has 
-c     been tested for some modes and some added concentrations), only 
-c     giving much improved solutions for near zero added condensate/
-c     coagulate onto the background aerosols. The original resolution has 
-c     therefore been kept as it was. However, the linearly interpolated
-c     dndklrny below (nlin) has now been changed with an exponentially
-c     interpolated function for radii<19um, which improves the solutions
-c     significantly! For ictot or icatot=1, the estimated volume for the
-c     adapted log-normal size distribution is now only 1% smaller to 1% 
-c     larger than the volume before lognormal adaptation.
-cc     
-cc 19/8-2014: After finding rks and logsks from the method above, we seek
-c      a new logsks that no longer fulfills least square method requirements
-c      (minimum ss), but which preserves volume (since number is already well 
-c      conserved and does not change with logsks). This means that the CAM5-
-c      Oslo code can be simplified (Massratio=1, no need to be calculated).
-cc
-cc 28/8-2014: This code is not very robust: small changes may ause the code
-c      to stop working for some cases. Presently the code crashes for kcomp=8
-c      when trying to find the fine solution. The coarse solution method works,
-c      and has been used in this last version, but only for kcomp=8.
-cc
+c     This subroutine produces look-up tables of modal parameters for lognormal
+c     size distrubutions with best fit to the genrerally non-lognormal modified
+c     size distributions from the code in conteq.f.
+c
 c     Note that the dry lognormal fitted size parameters do not depend
 c     on the mass fraction fombc for kcomp=1, nor fbcbg for kcomp=4.
 
@@ -57,21 +27,20 @@ c     on the mass fraction fombc for kcomp=1, nor fbcbg for kcomp=4.
       INTEGER  j1nm, j19um, j20um, istep, isteps, jsteps
       REAL     dndlrk(0:100), nsumorig
 
-c     Due to coarse resolution for large radii it is necessary to
-c     evaluate interpolated dndlrk and dndlrktilp for linear r-grid:
-c    (to avoid that small sizes get weighted more than larger sizes) 
+c     Due to the coarse resolution for large radii it is necessary to
+c     evaluate interpolated dndlrk and dndlrktilp for linear r-grid
+c     (to avoid that small sizes get weighted more than larger sizes) 
 c     Note: j=1 and 20000 corresponds to 0.001 and 20 um radius for
 c     dres=1.0e3. For testing with higher resolution solutions, using
 c     dres=sres=1.0e4 arrays sizes for rlin, nlin and nlintilp must
 c     be increased accordingly). A key formula for understanding the
 c     code below is: 
 c     r(i)=10**(d(i-1)-3), where i=1,1+int(4.3/d), see constsize.f.
-      dres=1.e3      ! r resolution (number of values within 1 um: only 1.e3 well tested)
-      invdres=1.0/dres                ! width of each radius bin (dr)
-      j20um=int(20*dres)
-      j19um=int(19*dres)
-      j1nm=int(0.001*dres)
-c      write(*,*) 'j1nm =', j1nm
+      dres=1.e3                 ! r resolution (number of values within 1 um: only 1.e3 well tested)
+      invdres=1.0/dres      ! width of each radius bin (dr)
+      j20um=int(20*dres)    ! j corresponding to r = 20 um
+      j19um=int(19*dres)    ! j corresponding to r = 19 um
+      j1nm=int(0.001*dres)  ! j corresponding to r = 1 nm
       do j=j1nm,j19um                    
         rlin(j)=invdres*j            
         i=1+int((3+log10(1.0*j)+log10(invdres))/d)
@@ -81,7 +50,6 @@ c      write(*,*) 'j1nm =', j1nm
         nlin(j)=exp(a*rlin(j)+b)       ! exponentially interpolated dndklrny
 c        write(888,*) i, r(i) 
 c        write(887,*) j,i,a,b,nlin(j) 
-c        write(*,*) rlin(j),nlin(j) 
 c        write(889,*) rlin(j),nlin(j) 
       enddo
       do j=j19um+1,j20um                    
@@ -89,18 +57,16 @@ c        write(889,*) rlin(j),nlin(j)
         i=1+int((3+log10(1.0*j)+log10(invdres))/d)
         a=(dndlrkny(i+1)-dndlrkny(i))/(r(i+1)-r(i))
         b=dndlrkny(i)-a*r(i)  
-        nlin(j)=a*rlin(j)+b           ! linearly interpolated dndklrny
+        nlin(j)=a*rlin(j)+b            ! linearly interpolated dndklrny
 c        write(888,*) i, r(i) 
 c        write(887,*) j,i,a,b,nlin(j) 
-c        write(*,*) rlin(j),nlin(j) 
 c        write(889,*) rlin(j),nlin(j) 
       enddo
      
-c     Narrow down the search area for adapted modal radii (rks)
+c     Narrow down the search area for adapted modal radii (rks).
 c     Find smallest rlin (rmin=r(jmin)) for which nlin*r**2>1.e-10?
-c      eps=1.e-4
       eps=1.e-10
-      nmin=1.e-10  ! initialverdi
+      nmin=1.e-10  ! initial value
       j=0
       do while (nmin*rlin(j)**2.lt.eps.and.j.lt.j20um)
         j=j+1        
@@ -109,10 +75,9 @@ c      eps=1.e-4
       enddo
 c      write(*,*) 'rmin, nlinmin =', rlin(jmin), nlin(jmin)*rlin(jmin)**2 
 c     Find largest rlin (rmin=r(jmax)) for which nlin*r**2>1.e-4?
-      eps=1.e-4  ! 1.e-8 gir problemer (krasj)
-      nmin=1.e-10  ! initialverdi
+      eps=1.e-4 
+      nmin=1.e-10  ! initial value
       j=j20um
-c      do while (nmin.lt.eps.and.j.gt.1)
       do while (nmin*rlin(j)**2.lt.eps.and.j.gt.j1nm)
         j=j-1        
         jmax=j
@@ -129,11 +94,6 @@ c     Calculate rks, logsk and deviation ss for first estimate (coarse r and log
       ss=1.e6                         ! arbitrary large (enough) number
       ilog1=int(0.04*sres)            ! ilog for assumed low limit sigma 
       ilog2=int(0.4*sres)             ! ilog for assumed high limit sigma 
-c      if(kcomp.eq.8) then
-c        ilog1=1                       ! this fine SS mode may get very sharp due to large growth
-c        ilog1=int(0.001*sres)          ! this fine SS mode may get very sharp due to large growth
-c        ilog2=int(0.6*sres)           ! this fine SS mode may get very wide due to cloud processing
-c      endif
 c     logs-loop
       do ilog=ilog1,ilog2,istep
         logsk=invsres*ilog
@@ -159,7 +119,7 @@ c          write(*,*) 'rks, logsks, ss =', rks, logsks, ss
         enddo  
       enddo
 c      write(*,*) 'rks1, logsks1 =', rks, logsks
-c     terminate if outside (on the edge of) interval     
+c     terminate if outside or on the edge of the radius and sigma intervals     
       if(rks.le.1e-2.or.rks.ge.19e-0) then
         write(*,*) 'Error: rks.le.1e-2.or.rks.ge.19e-0'
         stop
@@ -172,11 +132,6 @@ c     terminate if outside (on the edge of) interval
         stop
       endif
 
-c     Range of rk and logsk (*0.5 to *2) for finer resolution solution 
-c      irmin=max(jmin,int(500*rks))
-c      irmax=min(jmax,int(2000*rks))
-c      ilogmin=max(ilog1,int(500*logsks)) 
-c      ilogmax=min(ilog2,int(2000*logsks)) 
 c     Range of rk and logsk) for finer resolution solution 
       irmin=max(jmin,int(dres*rks)-5*jsteps)
       irmax=min(jmax,int(dres*rks)+5*jsteps)
@@ -209,7 +164,6 @@ c       r-loop
         do ir=irmin,irmax
          rk=rlin(ir)        
          jstep=int(0.01*dres*rk)+1      ! larger step values for large radii to save CPU time
-c         jstep=1     ! testet for kcomp=2: gir samme svar for alle pålegg 
          s=0.0
          do j=jmin,jmax,jstep
           nk=(1.0/logsk)*exp(-0.5*(log10(rlin(j)/rk)/logsk)**2)
@@ -241,7 +195,7 @@ c         write(*,*) 'jfr. rks, logsks, ss =', rks, logsks, s
 cjfr-
 c      write(*,*) 'rks, logsks, ss =', rks, logsks, ss
 
-c terminate if outside (on the edge of) interval     
+c terminate if outside or on the edge of the radius and sigma intervals     
       if(rks.le.irmin*invdres.or.rks.ge.irmax*invdres) then
        write(*,*) 'Error: rks outside interval -> modify the code!'
        write(*,*) '(e.g. by increasing the [rmin,rmax] range)' 
@@ -284,7 +238,6 @@ c        vsum=vsum+nlin(j)*rlin(j)**3  ! w.r.t. volume (r**3 due to logarithmic 
 c       enddo
 c       vsummod=(invdres/d)*vsum
 c- 
-c       write(*,*) 'vsummod =', 0.1*vsum
        nsum=0.0
        vsum=0.0
        do i=1,imax
@@ -300,11 +253,8 @@ c       write(*,*) 'vsumtilp/vsummod =', vsumtilp/vsummod
 c       write(*,*) 'rks, logsks =', rks, logsks
        logsksold=logsks
 cc******************************************************************************
-c      Recalculating logsks by assuming conserved volume and no change in rks:
-c       const=2.0/(3.0*(log(10.0))**2)
-c       logsks=sqrt(logsks**2-const*log(vsumtilp/vsummod)) ! overkompanserer: feil formel!?
 
-c      Finding new logsks that no longer fulfills least square method requirements
+c      Find new logsks that no longer fulfills least square method requirements
 c      (minimum ss) but which preserves volume (since number is already well conserved 
 c      and does not change with logsks)
        deltav=vsumtilp/vsummod-1.0

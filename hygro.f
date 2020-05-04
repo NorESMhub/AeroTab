@@ -74,7 +74,7 @@ c     to exist only as ammonium sulfate.
       endif
 
 c     Ammonium sulphate (aerosoltype 1 in CAM5-Oslo)
-c     (Ghan et al., 2001; RHC and RHD from Tang & Minkelwitz, 1994)
+c     (Ghan et al., 2001; RHC and RHD from Tang & Munkelwitz, 1994)
       xa=0.507 ! This is the value previously used
       xcam=get_hygroscopicity(AEROSOL_TYPE_SULFATE)
       if(abs((xa-xcam)/xcam).gt.0.005) then
@@ -82,8 +82,8 @@ c     (Ghan et al., 2001; RHC and RHD from Tang & Minkelwitz, 1994)
         write(*,*) 'Edit xa here or in CAM5-Oslo before continuing.'
         stop
       endif
-      rhca=0.37   ! point of crystallisation (Tang & Minkelwitz, 1994)
-      rhda=0.80   ! point of crystallisation (Tang & Minkelwitz, 1994)
+      rhca=0.37   ! point of crystallisation (Tang & Munkelwitz, 1994)
+      rhda=0.80   ! point of deliquescence (Tang & Munkelwitz, 1994)
       if(rh.ge.rhda) then
         xa=xa    ! value used for cloud activation calculations
       elseif(rh.lt.rhca) then ! below point of crystallization, assume a small but non-zero value
@@ -114,7 +114,7 @@ c     as inferred from Table 2 in Kopke et al. (1997):
         endif
       endif
       rhcss=0.46   ! point of crystallisation (Tang, 1966) 
-      rhdss=0.75   ! point of crystallisation (Tang, 1966) 
+      rhdss=0.75   ! point of deliquescence (Tang, 1966) 
 c     Assuming half hygroscopicity in the hysteresis regime
       if(rh.ge.rhcss.and.rh.le.rhdss) then
         xss=0.5*xss
@@ -137,7 +137,7 @@ c     Assuming half hygroscopicity in the hysteresis regime
       real hygroscopicity
       real Mw, rhow
 
-      data Mw, rhow / 1.8016e1, 1.0e3 /  ! bør defineres ett sentralt sted felles for hele koden!!!
+      data Mw, rhow / 1.8016e1, 1.0e3 /
 
       hygroscopicity = 
      $         aerosol_type_soluble_mass_fraction(typeindex) 

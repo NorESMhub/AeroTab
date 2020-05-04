@@ -2,7 +2,7 @@
      $ vombg, fombg, vbcbg, fbcbg, dndlrk, dndlrkny, kcomp, itot, ib, 
      $ vssol, vbcsol, vocsol, vasol, vw, fki, rh, Ctot, Nnat, catot, 
      $ fac, fabc, faq, fracdim, xlam, xlami, xlamb, xlame, 
-     $ fband, fb, cref, omega, gass, bext, kext) 
+     $ fband, fb, cref, omega, gass, bext, kext, Cdry, extradiag) 
 
 c **********************************************************************************
 c     Created by Alf Kirkevåg.
@@ -40,7 +40,7 @@ c     over the size distribution), and writes the result to file.
       COMPLEX  CREFIN(2), SFORW, SBACK, S1(MAXANG), S2(MAXANG),
      $         TFORW(2), TBACK(2), crin, cref(5,31)
       LOGICAL  iband11, iband16, iband440, iband500, iband670, iband870
-      LOGICAL  iband550
+      LOGICAL  iband550, extradiag
       REAL fombg, vombg, vbcbg, fbcbg
 
 	perfct =.false.
@@ -121,7 +121,6 @@ c       logical variables for specific AeroCom calculations (if .true.)
 c       the gross optical parameters for an aerosol mode is found by
 c       integrating over all particle radii (for each wavelength)  
 c        write(*,*) 'imin, imax =', imin, imax
-ctest        do 1000 i=20,20
         do 1000 i=imin,imax   ! intergration over size
 
           xx(1)=2*pi*r(i)/xlam(iband)
@@ -196,11 +195,10 @@ c          Size integrated backscatter at 180 deg. (s. 54 i permXXIII) (CABS = c
             gbetas=gbetas+dgbs       
             if(iband11.or.iband16.or.iband440.or.iband500
      $        .or.iband550.or.iband670.or.iband870) then
-c          AeroCom-calculations (TI): use v*dry but dndlrkny wet, i.e. r wet,
-c          so that the sum of extinctions for each species, except water, equals 
-c          the total extiction, including water. But, this method yield SSA for
-c          each component which doesn't take into account the species refractive
-c          index. Must be a flaw!!!  Still....   
+c          AeroCom-calculations: use v*dry but dndlrkny wet, i.e. r wet, so that
+c          the sum of extinctions for each species, except water, equals the total
+c          extiction, including water. Note that this method yield SSA for each 
+c          component which doesn't take into account the specie's refractive index.    
              dba=dbe-dbs
 
              dbebg=dbe*vai(i)*1.e-3 
@@ -240,9 +238,6 @@ c          index. Must be a flaw!!!  Still....
 
  1000   continue   ! intergration over size
 
-c            write(100,*) xlam(iband), real(crin) 
-c            write(101,*) xlam(iband), aimag(crin) 
-
 c        if(iband550) then 
 c          write(*,*) 'betae, backsc =', betae, backsc 
 c          write(*,*) 'S =', betae*1.e-3/backsc
@@ -253,19 +248,24 @@ c       size integrated values of the single scattering albedo,
 c       ssaltot, and asymmetry factor, gtot:
         ssaltot=betas/betae
         gtot=gbetas/betas
-c        write(*,2000) lambda1, ssaltot, gtot, betae/Ctot
         omega(iband)=ssaltot
         gass(iband) =gtot
         bext(iband) =betae*1.e-3
         kext(iband) =betae/Ctot
         babs(iband) =(1.0-omega(iband))*bext(iband)
-c        write(40,3000) xlam(iband), omega(iband)
-c        write(41,3000) xlam(iband), gass(iband)
-c        write(42,3000) xlam(iband), bext(iband)
-c        write(43,3000) xlam(iband), kext(iband)
-c         if(iband.eq.12) then
+      if(extradiag) then
+        write(40,3000) xlam(iband), omega(iband)
+        write(41,3000) xlam(iband), gass(iband)
+        write(42,3000) xlam(iband), bext(iband)
+        write(43,3000) xlam(iband), kext(iband)
+        write(44,3000) xlam(iband), kext(iband)*Ctot/Cdry
+      endif
+c        if(iband.eq.12) then
 c          write(*,*) iband, xlam(iband), omega(iband)
 c          write(*,*) iband, kext(iband), kext(iband)*(1.0-omega(iband)) 
+c          write(*,*) 'Cdry, Ctot = ', Cdry, Ctot
+c          write(*,*) 'lam, kext = ', xlam(iband), kext(iband)
+c          write(*,*) 'lam, kextny = ',xlam(iband), kext(iband)*Ctot/Cdry
 c         endif
 
       enddo     ! iband
@@ -320,22 +320,6 @@ c          write(*,*) 'bext12sum=', bebglt1+bebggt1+bebclt1+bebcgt1
 c     $                            +beoclt1+beocgt1+besult1+besugt1      
 c          write(*,*) 'backsc=', backsc
 c          write(*,*) 'S* =', bext(12)/backsc
-c         write(9500,8100) kcomp, rh, catot, 
-c     $     bext(9),  bext(11), bext(15), bext(18), 
-c     $     bebg(9),  bebg(11), bebg(15), bebg(18), 
-c     $     bebc(9),  bebc(11), bebc(15), bebc(18),
-c     $     beoc(9),  beoc(11), beoc(15), beoc(18),
-c     $     besu(9),  besu(11), besu(15), besu(18),
-c     $     babs(9),  babs(11), babs(12), babs(15), babs(18),
-c     $     bebglt1, bebggt1, bebclt1, bebcgt1, 
-c     $     beoclt1, beocgt1, besult1, besugt1, backsc,
-c     $     babg(12), babc(12), baoc(12), basu(12) 
-cc          write(*,*) 'bext(12) =', bext(12)
-cc          write(*,*) 'bext12sum=', bebglt1+bebggt1+bebclt1+bebcgt1
-cc     $                            +beoclt1+beocgt1+besult1+besugt1      
-cc          write(*,*) 'backsc=', backsc
-cc          write(*,*) 'S* =', bext(12)/backsc
-c         endif
         elseif(kcomp.eq.4) then
          write(9500,6100) kcomp, rh, fbcbg, catot, fac, faq, 
      $     bext(9),  bext(11), bext(15), bext(18), 
@@ -363,7 +347,6 @@ c          write(*,*) 'S* =', bext(12)/backsc
      $     bebglt1, bebggt1, bebclt1, bebcgt1, 
      $     beoclt1, beocgt1, besult1, besugt1, backsc,  
      $     babg(12), babc(12), baoc(12), basu(12)  
-ctest ok
 c          write(*,*) 'bext(12) =', bext(12)
 c          write(*,*) 'bext12sum=', bebglt1+bebggt1+bebclt1+bebcgt1
 c     $                            +beoclt1+beocgt1+besult1+besugt1      
@@ -371,7 +354,6 @@ c          write(*,*) 'k, besu(12) =', kcomp, besu(12)
 c          write(*,*) 'k, besu12sum=', kcomp, besult1+besugt1 
 c          write(*,*) 'backsc=', backsc
 c          write(*,*) 'S* =', bext(12)/backsc
-ctest
         endif ! kcomp
 cANG+   some extra angstrom diagnostics
 c       xlam(9)=0.44, xlam(11)=0.50, xlam(12)=0.55, xlam(15)=0.67 and xlam(18)=0.87 um 
@@ -400,6 +382,7 @@ c       convert from ib=31 to the usual ib=14 for input to CAM5
           bext(iband)  = bext(iband+17)
           kext(iband)  = kext(iband+17)
         enddo
+copt+   optional calculations and output for test and plotting purposes
 c        do iband = 1,14
 c          if(iband.eq.1) then
 c            lam = 0.2315 
@@ -428,14 +411,16 @@ c          write(52,3000) lam, bext(iband)
 c          write(53,3000) lam, kext(iband)
 c          write(54,3000) lam, kext(iband)*Ctot/Cdry
 c          write(55,3000) lam, kext(iband)*(1.0-omega(iband))
+c          write(56,3000) lam, bext(iband)*(1.0-omega(iband))
 c            write(*,*) iband, lam
 c        enddo
-
+copt-
+        
 c*****************************************************************
 
       elseif(ib.eq.19) then   ! xlam(16)=24.2855, xlam(17)=45, xlam(18)=60, xlam(19)=85 
 
-c       no AEROCOM look-up tables needed here...
+c       no AEROCOM look-up tables needed here in LW
 c       find Chandrasekhar-averaged optical parameters for the wide bands
 ccccc6ccc1ccccccccc2ccccccccc3ccccccccc4ccccccccc5ccccccccc6ccccccccc7cc
         call chandrav (ib, xlam, xlamb, xlame, fband, fb,
@@ -478,40 +463,6 @@ c*****************************************************************
        beocgt1=beoc(11)-beoclt1   
        besugt1=besu(11)-besult1   
 
-c      Note: aerocomk*.out for ib=29 is not used any more.
-c       if(itot.eq.1) then
-c        if(kcomp.le.3) then
-c         write(9500,8000) kcomp, rh, catot, 
-c     $     bext(11), babs(11), bext(16), babs(16), 
-c     $     bebg(11), babg(11), bebg(16), babg(16), 
-c     $     bebc(11), babc(11), bebc(16), babc(16),
-c     $     beoc(11), baoc(11), beoc(16), baoc(16),
-c     $     besu(11), basu(11), besu(16), basu(16),
-c     $     bebglt1, bebggt1, bebclt1, bebcgt1, 
-c     $     beoclt1, beocgt1, besult1, besugt1  
-c        elseif(kcomp.eq.4) then
-c         write(9500,8500) kcomp, rh, catot, fac, faq, 
-c     $     bext(11), babs(11), bext(16), babs(16), 
-c     $     bebg(11), babg(11), bebg(16), babg(16), 
-c     $     bebc(11), babc(11), bebc(16), babc(16),
-c     $     beoc(11), baoc(11), beoc(16), baoc(16),
-c     $     besu(11), basu(11), besu(16), basu(16),
-c     $     bebglt1, bebggt1, bebclt1, bebcgt1, 
-c     $     beoclt1, beocgt1, besult1, besugt1  
-c        else
-c         write(9500,6000) kcomp, rh, catot, fac, fabc, faq, 
-c     $     bext(11), babs(11), bext(16), babs(16), 
-c     $     bebg(11), babg(11), bebg(16), babg(16), 
-c     $     bebc(11), babc(11), bebc(16), babc(16),
-c     $     beoc(11), baoc(11), beoc(16), baoc(16),
-c     $     besu(11), basu(11), besu(16), basu(16),
-c     $     bebglt1, bebggt1, bebclt1, bebcgt1, 
-c     $     beoclt1, beocgt1, besult1, besugt1  
-c        endif
-c       elseif(itot.eq.0) then
-c         write(9500,7000) kcomp, rh,  
-c     $     bebg(11), babg(11), bebg(16), babg(16), bebglt1, bebggt1 
-c       endif
 
 c       find Chandrasekhar-averaged optical parameters for the wide bands
 ccccc6ccc1ccccccccc2ccccccccc3ccccccccc4ccccccccc5ccccccccc6ccccccccc7cc
@@ -601,7 +552,7 @@ c
 c
 c19/11-2013:
       elseif(ib.eq.19) then  ! RRTMG LW  
-c     trenger bare (1-omega)*kext her til slutt (masse faas fra SW-tabellene)
+c     We only need (1-omega)*kext, since mass is abtained via the SW files
        if(kcomp.eq.0) then
          do iband = 1, 16
            write(9009,4010) kcomp, iband, rh,  
@@ -663,7 +614,6 @@ c
 
       endif
 
- 2000 format(4(x,e12.5))
  3000 format(2(x,e12.5))
  4000 format(2I3,f8.3,4(x,e12.5))
  4010 format(2I3,f8.3,x,e12.5)

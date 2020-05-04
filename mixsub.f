@@ -9,7 +9,7 @@ c ******************************************************************************
 c     Mixsub calculates hygroscopic properties (given by x) for an internal mixture 
 c     of aerosol components with different hygroscopicity (x*).
 c     Internal mixture of two constituents in the background aerosol for kcomp = 4
-c     and new kcomp = 1 (including SOA nucleation) is now taken into account.
+c     and new kcomp = 1 (including SOA from nucleation) is now taken into account.
 
       implicit none
 
@@ -24,8 +24,8 @@ c     Set the hygroscopicity of the background aerosol
       if(kcomp.eq.1) then
 c       Sulfuric acid internally mixed with OM (as SOA) (using volume mixing approximation):
         xbg=xs*(1-vombg)+xoc*vombg
-ct         xbg=xs   ! this is the correct value for H2SO4
-ct         xbg=xa   ! this gives hygroscopicity for ammonium sulfate instead of H2SO4 (just for testing & plotting purposes)
+ctest         xbg=xs   ! this is the correct value for H2SO4
+ctest         xbg=xa   ! this gives hygroscopicity for ammonium sulfate instead of H2SO4 (just for testing & plotting purposes)
       elseif(kcomp.eq.2) then 
 c        Hydrophobic BC:
          xbg=xbc
@@ -38,7 +38,7 @@ c        Organic Carbon:
       elseif(kcomp.eq.5) then 
 c        Sulfuric acid:
          xbg=xs   ! this is the correct value for H2SO4
-ct         xbg=xa   ! this gives hygroscopicity for ammonium sulfate instead of H2SO4 (just for testing & plotting purposes)
+ctest         xbg=xa   ! this gives hygroscopicity for ammonium sulfate instead of H2SO4 (just for testing & plotting purposes)
       elseif(kcomp.eq.6.or.kcomp.eq.7) then 
 c        Mineral dust:
          xbg=xdst
@@ -54,7 +54,7 @@ c     except for mode 1-4, where all SO4 is H2SO4 instead.
       if(kcomp.ge.1.and.kcomp.le.10) then
        if(itot.eq.0) then
          x=xbg
-       else    ! internal mixture                           Prøv med coating-antakelser her!
+       else    ! internal mixture   (Note:  Coating assumptions could have been applied here!)
          x=(1.0-vsk(i)-vbck(i)-vock(i))*xbg
      $    +vsk(i)*(faq*xa+(1.0-faq)*xs)+vbck(i)*xbc+vock(i)*xoc 
        endif 
@@ -63,8 +63,6 @@ c     only sulfate or soot:
         write(*,*) 'kcomp = 1-10 only'
         stop
       endif
-
-c      write(117,*), i, x, rh
 
       return
       end  

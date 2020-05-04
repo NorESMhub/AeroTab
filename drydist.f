@@ -9,7 +9,7 @@ c     Dry background mode size distribution, dndlrk (cm^-3), and dry background
 c     aerosol contribution to the mass concentration Ctot (ug/m^3). 
 c     Note: this calculation of Ctot does not take into account that the 
 c     backrgound aerosol can be an internal mixture of two constituents.
-c     This must be compensated for (by scaling) other places in the code. 
+c     This is compensated for (by scaling) in AeroTab.f. 
 
       implicit none
 
@@ -23,8 +23,6 @@ c     This must be compensated for (by scaling) other places in the code.
         nk=(1.0/logsk)*exp(-0.5*(log10(r(i)/rk)/logsk)**2.0)
         dndlrk(i)=Nnat*nk/sqrt(2.0*pi)
         ntot=ntot+dndlrk(i)*d
-ctest        write(*,*) 'r, ntot =', i, r(i), ntot
-c        write(14,*) r(i), dndlrk(i)
       enddo
 
       Ctot=0.0
@@ -40,7 +38,6 @@ ctst         endif
         dCtot=Nnat/(3e3*logs0/(sqrt(8.0*pi)*bcint))
         Ctot=Ctot+dCtot
       endif
-c      write(*,*) 'Background mass conc. (normalized mode) =', Ctot
  
       return
       end 
